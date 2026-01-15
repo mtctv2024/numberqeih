@@ -181,6 +181,7 @@ label {
 
 input[type="text"],
 input[type="time"],
+input[type="password"],
 select,
 textarea {
     width: 100%;
@@ -194,6 +195,7 @@ textarea {
 
 input[type="text"]:focus,
 input[type="time"]:focus,
+input[type="password"]:focus,
 select:focus,
 textarea:focus {
     outline: none;
@@ -280,6 +282,53 @@ textarea {
     flex-wrap: wrap;
 }
 
+/* SERVICES GRID */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.service-btn {
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    background: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-align: center;
+    line-height: 1.4;
+    color: var(--text-dark);
+    touch-action: manipulation;
+}
+
+.service-btn:hover {
+    border-color: var(--primary-color);
+    background: #f0f7ff;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(1, 105, 72, 0.2);
+}
+
+.service-btn.selected {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    box-shadow: 0 6px 20px rgba(1, 105, 72, 0.4);
+}
+
+.selected-service-box {
+    margin-top: 15px;
+    padding: 10px;
+    background: #e3f2fd;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    color: #016948;
+}
+
 /* QUEUE DISPLAY */
 .queue-number {
     background: linear-gradient(135deg, #018b72 0%, #016948 100%);
@@ -330,7 +379,7 @@ textarea {
     background: linear-gradient(135deg, #01676b 0%, #016948 100%);
 }
 
-stat-card.green {
+.stat-card.green {
     background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%);
 }
 
@@ -382,6 +431,14 @@ stat-card.green {
     width: 90%;
 }
 
+.modal-header {
+    margin-bottom: 20px;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
 .close-btn {
     position: absolute;
     top: 12px;
@@ -391,6 +448,10 @@ stat-card.green {
     font-size: 26px;
     cursor: pointer;
     color: var(--text-light);
+}
+
+.close-btn:hover {
+    color: var(--text-dark);
 }
 
 /* أزرار دخول/إلغاء متساوية */
@@ -419,115 +480,3 @@ stat-card.green {
     font-size: 12px;
     line-height: 1.6;
     text-align: center;
-}
-
-.ticket-header {
-    border-bottom: 2px dashed var(--border-color);
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-
-.ticket-logo {
-    width: 60px;
-    height: 60px;
-    border-radius: 4px;
-    object-fit: cover;
-    margin: 0 auto 10px;
-}
-
-.ticket-number {
-    font-size: 24px;
-    font-weight: bold;
-    color: var(--primary-color);
-    margin: 15px 0;
-}
-
-.ticket-footer {
-    border-top: 2px dashed var(--border-color);
-    padding-top: 10px;
-    margin-top: 10px;
-    font-size: 10px;
-    color: var(--text-light);
-}
-
-/* ALERTS */
-.alert {
-    padding: 15px 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    animation: slideDown 0.3s ease;
-}
-
-@keyframes slideDown {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.alert-success {
-    background: #d4edda;
-    color: #155724;
-    border-left: 4px solid var(--success-color);
-}
-
-.alert-error {
-    background: #f8d7da;
-    color: #721c24;
-    border-left: 4px solid var(--danger-color);
-}
-
-.alert-info {
-    background: #d1ecf1;
-    color: #0c5460;
-    border-left: 4px solid var(--primary-color);
-}
-
-/* FILE INPUT */
-.file-input-wrapper {
-    position: relative;
-    overflow: hidden;
-    display: inline-block;
-    width: 100%;
-}
-
-.file-input-wrapper input[type=file] {
-    position: absolute;
-    left: -9999px;
-}
-
-.file-input-label {
-    display: block;
-    padding: 12px 15px;
-    background: var(--bg-light);
-    border: 2px dashed var(--border-color);
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.file-input-label:hover {
-    background: #e8e8e8;
-    border-color: var(--primary-color);
-}
-
-.file-name {
-    margin-top: 10px;
-    font-size: 12px;
-    color: var(--text-light);
-}
-
-/* TABLE */
-.table-responsive {
-    overflow-x: auto;
-    margin: 20px 0;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
