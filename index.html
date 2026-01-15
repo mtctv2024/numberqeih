@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أمانة منطقة الرياض</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-logo-wrapper">
+                <img id="headerLogo" class="header-logo" src="" alt="" style="display:none;">
+            </div>
+            <div class="header-text">
+                <h1>أمانة منطقة الرياض</h1>
+                <p>بلدية محافظة القويعية</p>
+            </div>
+            <button class="settings-icon" onclick="openAdminLoginModal()">
+                ⚙️
+            </button>
+        </div>
+
+        <!-- ALERTS -->
+        <div id="alertContainer"></div>
+
+        <!-- TABS -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('main', event)">الرئيسية</button>
+        </div>
+
+        <!-- MAIN TAB -->
+        <div id="main" class="tab-content active">
+            <div class="card">
+                <h2>نأمل تعبئة البيانات وطباعة رقم الانتظار</h2>
+                
+                <div class="form-group">
+                    <label>اسم المراجع *</label>
+                    <input type="text" id="customerName" placeholder="أدخل اسم المراجع الكامل" autocomplete="off" required>
+                </div>
+
+                <div class="form-group">
+                    <label>نوع الخدمة *</label>
+                    <div class="services-grid" id="servicesContainer">
+                        <button type="button" class="service-btn" data-service="مقابلة رئيس البلدية" onclick="selectService(this)">
+                            مقابلة رئيس البلدية
+                        </button>
+                        <button type="button" class="service-btn" data-service="الاستثمارات" onclick="selectService(this)">
+                            الاستثمارات
+                        </button>
+                        <button type="button" class="service-btn" data-service="صحة البيئة" onclick="selectService(this)">
+                            صحة البيئة
+                        </button>
+                        <button type="button" class="service-btn" data-service="الأراضي" onclick="selectService(this)">
+                            الأراضي
+                        </button>
+                        <button type="button" class="service-btn" data-service="الشؤون الفنية" onclick="selectService(this)">
+                            الشؤون الفنية
+                        </button>
+                        <button type="button" class="service-btn" data-service="المشتريات" onclick="selectService(this)">
+                            المشتريات
+                        </button>
+                        <button type="button" class="service-btn" data-service="المشاريع" onclick="selectService(this)">
+                            المشاريع
+                        </button>
+                        <button type="button" class="service-btn" data-service="الخدمات العامة" onclick="selectService(this)">
+                            الخدمات العامة
+                        </button>
+                    </div>
+                    <input type="hidden" id="serviceType" required>
+                    <div id="selectedServiceDisplay" class="selected-service-box" style="display:none;">
+                        تم اختيار: <span id="selectedServiceText"></span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateAndPrintTicket()">
+                    🖨️ طباعة
+                </button>
+            </div>
+
+            <!-- QUEUE DISPLAY -->
+            <div class="queue-number" id="queueDisplay">
+                <h3>رقم الانتظار الحالي</h3>
+                <div class="number" id="currentQueue">001</div>
+                <div class="timestamp" id="timestamp"></div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <h2>⚙️ إعدادات المنشأة</h2>
+
+                <div class="form-group">
+                    <label>اسم المنشأة *</label>
+                    <input type="text" id="orgName" placeholder="أدخل اسم المنشأة" required>
+                </div>
+
+                <div class="form-group">
+                    <label>رسالة التذييل</label>
+                    <textarea id="footerMessage" placeholder="رسالة اختيارية تظهر في التذكرة (مثل: جميع الحقوق محفوظة)"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>شعار المنشأة (يظهر في الهيدر والتذكرة)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="logoFile" accept="image/*" onchange="previewLogo(event)">
+                        <label for="logoFile" class="file-input-label">
+                            انقر لرفع الشعار أو اسحب الملف هنا
+                        </label>
+                        <div class="file-name" id="logoFileName"></div>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <img id="logoPreview" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
+                    </div>
+                </div>
+
+                <button class="btn btn-success" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+            </div>
+
+            <div class="card">
+                <h2>🖨️ إعدادات الطباعة</h2>
+
+                <div class="form-group">
+                    <label>وقت التصفير اليومي</label>
+                    <div class="inline-group">
+                        <input type="time" id="resetTime" value="05:00">
+                        <button type="button" class="btn btn-danger btn-inline" onclick="resetCounterNow()">
+                            تصفير فوري
+                        </button>
+                    </div>
+                    <small style="color: #999; margin-top: 5px; display: block;">سيتم إعادة تعيين عداد الطوابير يومياً في هذا الوقت</small>
+                </div>
+
+                <div class="form-group">
+                    <label>عرض الورقة (بوصة)</label>
+                    <select id="paperWidth">
+                        <option value="3">3 بوصة (حرارية قياسية)</option>
+                        <option value="4">4 بوصة</option>
+                        <option value="58">58 مم (حرارية)</option>
+                        <option value="80">80 مم (حرارية عريضة)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>الطابعة الافتراضية</label>
+                    <select id="printerSelect">
+                        <option value="">-- اختر الطابعة الافتراضية --</option>
+                        <option value="thermal_58">طابعة حرارية 58مم</option>
+                        <option value="thermal_80">طابعة حرارية 80مم</option>
+                        <option value="network_printer">طابعة شبكة</option>
+                    </select>
+                </div>
+
+                <button class="btn btn-secondary" onclick="testPrint()">🧪 اختبار الطباعة</button>
+                <button class="btn btn-danger" onclick="resetCounter()">🔄 إعادة تعيين العداد</button>
+            </div>
+
+            <div class="card">
+                <h2>🗑️ إدارة البيانات</h2>
+                <p style="color: #666; margin-bottom: 15px;">
+                    <strong>تنبيه:</strong> هذه الإجراءات لا يمكن التراجع عنها!
+                </p>
+                <div class="btn-group">
+                    <button class="btn btn-danger" onclick="clearHistory()">حذف السجل</button>
+                    <button class="btn btn-danger" onclick="resetAll()">إعادة تعيين كامل</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- HISTORY TAB -->
+        <div id="history" class="tab-content">
+            <div class="card">
+                <h2>📜 سجل التذاكر</h2>
+                
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="searchHistory" placeholder="🔍 ابحث عن المراجع أو الخدمة..." 
+                           onkeyup="filterHistory()" style="margin-bottom: 10px;">
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الرقم</th>
+                                <th>المراجع</th>
+                                <th>الخدمة</th>
+                                <th>التاريخ والوقت</th>
+                                <th>الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            <tr>
+                                <td colspan="6" style="text-align:center; color: #999;">لا توجد بيانات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📥 تحميل البيانات</h2>
+                <button class="btn btn-secondary" onclick="exportToCSV()">📊 تحميل CSV</button>
+                <button class="btn btn-secondary" onclick="exportToJSON()">📁 تحميل JSON</button>
+            </div>
+        </div>
+
+        <!-- STATS TAB -->
+        <div id="stats" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <h4>إجمالي التذاكر</h4>
+                    <div class="value" id="totalTickets">0</div>
+                </div>
+                <div class="stat-card green">
+                    <h4>اليوم</h4>
+                    <div class="value" id="todayTickets">0</div>
+                </div>
+                <div class="stat-card orange">
+                    <h4>الأسبوع</h4>
+                    <div class="value" id="weekTickets">0</div>
+                </div>
+                <div class="stat-card purple">
+                    <h4>الشهر</h4>
+                    <div class="value" id="monthTickets">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>📊 الخدمات الأكثر طلباً</h2>
+                <div id="servicesChart">
+                    <p style="text-align: center; color: #999;">لا توجد بيانات</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⏰ توزيع الطلبات بالساعات</h2>
+                <div id="hourlyChart">
+                    <p style="text-align: center; color: #999;">لا توجد بيانات</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINT PREVIEW MODAL -->
+    <div id="printModal" class="modal">
+        <div style="position: relative; width: auto;">
+            <button class="close-btn" onclick="closePrintModal()">&times;</button>
+            <div class="ticket-preview">
+                <div class="ticket-header">
+                    <img id="modalLogo" class="ticket-logo" src="" alt="">
+                    <div id="modalOrgName" style="font-weight: bold; font-size: 14px;"></div>
+                </div>
+                
+                <div style="margin: 20px 0; padding: 20px 0; border-top: 2px dashed #ddd; border-bottom: 2px dashed #ddd;">
+                    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">رقم الانتظار</div>
+                    <div class="ticket-number" id="modalQueueNum">001</div>
+                </div>
+
+                <div style="font-size: 11px; margin: 10px 0; line-height: 1.8;">
+                    <div><strong>المراجع:</strong> <span id="modalCustomer"></span></div>
+                    <div><strong>الخدمة:</strong> <span id="modalService"></span></div>
+                    <div><strong>التاريخ:</strong> <span id="modalDate"></span></div>
+                    <div><strong>الوقت:</strong> <span id="modalTime"></span></div>
+                </div>
+
+                <div class="ticket-footer">
+                    <div id="modalFooter" style="margin-top: 10px;"></div>
+                    <div style="margin-top: 10px; color: #999;">جميع الحقوق محفوظة</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button class="btn btn-primary" style="flex: 1;" onclick="printTicketAndClose()">🖨️ طباعة</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closePrintModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN LOGIN MODAL -->
+    <div id="adminLoginModal" class="modal">
+      <div class="modal-content" style="max-width:360px; position:relative;">
+        <button class="close-btn" onclick="closeAdminLoginModal()">&times;</button>
+        <div class="modal-header">
+          <h2>🔐 دخول المسؤول</h2>
+          <p style="font-size:13px; color:#666;">أدخل رمز المرور للوصول إلى الإعدادات المتقدمة</p>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>رمز المرور</label>
+            <input type="password" id="adminPasswordInput" placeholder="أدخل رمز المرور">
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-primary" onclick="submitAdminPassword()">دخول</button>
+            <button class="btn btn-secondary" onclick="closeAdminLoginModal()">إلغاء</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN MENU MODAL -->
+    <div id="adminMenuModal" class="modal">
+      <div class="modal-content" style="max-width:360px; position:relative;">
+        <button class="close-btn" onclick="closeAdminMenuModal()">&times;</button>
+        <div class="modal-header">
+          <h2>⚙️ قائمة المسؤول</h2>
+          <p style="font-size:13px; color:#666;">اختر القسم الذي تريد الدخول إليه</p>
+        </div>
+        <div class="modal-body">
+          <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="openProtectedTab('settings')">
+            إعدادات النظام
+          </button>
+          <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="openProtectedTab('history')">
+            سجل التذاكر
+          </button>
+          <button class="btn btn-primary" style="width:100%;" onclick="openProtectedTab('stats')">
+            الإحصائيات
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
