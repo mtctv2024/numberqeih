@@ -6,7 +6,8 @@ let db = {
     footerMessage: 'جميع الحقوق محفوظة',
     resetTime: '05:00',
     paperWidth: '3',
-    logo: null,
+    logoHeader: null, // شعار الهيدر
+    logoTicket: null, // شعار التذكرة
     tickets: [],
     settings: {
         printer: ''
@@ -98,7 +99,7 @@ function generateAndPrintTicket() {
     updateQueue();
     updateStatistics();
 
-    showAlert('تم إنشاء التذكرة بنجاح ✓ وتم مسح بيانات المراجع من الحقول', 'success');
+    showAlert('تم إنشاء التذكرة بنجاح ✓ وتم مسح رقم الهوية من الحقول', 'success');
 }
 
 function checkDailyReset() {
@@ -135,9 +136,12 @@ function showPrintPreview(ticket, autoPrint = false) {
     document.getElementById('modalOrgName').textContent = db.organizationName;
     document.getElementById('modalFooter').textContent = db.footerMessage;
 
-    if (db.logo) {
-        document.getElementById('modalLogo').src = db.logo;
-        document.getElementById('modalLogo').style.display = 'block';
+    const modalLogo = document.getElementById('modalLogo');
+    if (db.logoTicket) {
+        modalLogo.src = db.logoTicket;
+        modalLogo.style.display = 'block';
+    } else {
+        modalLogo.style.display = 'none';
     }
 
     const modal = document.getElementById('printModal');
@@ -173,7 +177,7 @@ function printTicketAndClose() {
 function testPrint() {
     const testTicket = {
         queueNumber: '999',
-        customerName: 'اختبار النظام',
+        customerName: '1234567890',
         serviceType: 'اختبار',
         timestamp: new Date()
     };
@@ -204,30 +208,49 @@ function saveSettings() {
     showAlert('تم حفظ الإعدادات بنجاح ✓', 'success');
 }
 
-function previewLogo(event) {
+// شعار الهيدر
+function previewLogoHeader(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = function(e) {
-        const img = e.target.result;
-        db.logo = img;
+        db.logoHeader = e.target.result;
 
-        const preview = document.getElementById('logoPreview');
-        preview.src = img;
+        const preview = document.getElementById('logoPreviewHeader');
+        preview.src = db.logoHeader;
         preview.style.display = 'block';
 
         const headerLogo = document.getElementById('headerLogo');
-        headerLogo.src = img;
+        headerLogo.src = db.logoHeader;
         headerLogo.style.display = 'block';
 
-        document.getElementById('logoFileName').textContent = `✓ تم رفع: ${file.name}`;
+        document.getElementById('logoFileNameHeader').textContent = `✓ تم رفع: ${file.name}`;
         saveDatabase();
     };
     reader.readAsDataURL(file);
 }
 
-// RESET COUNTER (سابق كما هو)
+// شعار التذكرة
+function previewLogoTicket(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        db.logoTicket = e.target.result;
+
+        const preview = document.getElementById('logoPreviewTicket');
+        preview.src = db.logoTicket;
+        preview.style.display = 'block';
+
+        document.getElementById('logoFileNameTicket').textContent = `✓ تم رفع: ${file.name}`;
+        saveDatabase();
+    };
+    reader.readAsDataURL(file);
+}
+
+// RESET COUNTER (قياسي)
 function resetCounter() {
     if (confirm('هل أنت متأكد من إعادة تعيين العداد؟ سيبدأ من 1')) {
         db.queueCounter = 1;
@@ -238,7 +261,7 @@ function resetCounter() {
     }
 }
 
-// RESET COUNTER NOW (زر التصفير الفوري بجوار وقت التصفير)
+// RESET COUNTER NOW (زر التصفير الفوري)
 function resetCounterNow() {
     const ok = confirm('تحذير: سيتم تصفير العداد فوراً وإعادة البدء من 1، هل تريد المتابعة؟');
     if (!ok) return;
@@ -279,7 +302,7 @@ function filterHistory() {
     }
 
     const filtered = db.tickets.filter(ticket => 
-        ticket.customerName.toLowerCase().includes(searchTerm) ||
+        String(ticket.customerName).toLowerCase().includes(searchTerm) ||
         ticket.serviceType.toLowerCase().includes(searchTerm)
     );
 
@@ -312,7 +335,7 @@ function exportToCSV() {
         return;
     }
 
-    let csv = 'الرقم,المراجع,الخدمة,التاريخ,الوقت\n';
+    let csv = 'الرقم,رقم الهوية,الخدمة,التاريخ,الوقت\n';
     db.tickets.forEach(ticket => {
         const date = new Date(ticket.timestamp);
         const dateStr = date.toLocaleDateString('ar-SA');
@@ -489,14 +512,22 @@ window.addEventListener('load', function() {
         if (printerSelect) printerSelect.value = db.settings.printer;
     }
 
-    if (db.logo) {
-        const preview = document.getElementById('logoPreview');
-        preview.src = db.logo;
-        preview.style.display = 'block';
+    // شعار الهيدر
+    if (db.logoHeader) {
+        const previewHeader = document.getElementById('logoPreviewHeader');
+        previewHeader.src = db.logoHeader;
+        previewHeader.style.display = 'block';
 
         const headerLogo = document.getElementById('headerLogo');
-        headerLogo.src = db.logo;
+        headerLogo.src = db.logoHeader;
         headerLogo.style.display = 'block';
+    }
+
+    // شعار التذكرة
+    if (db.logoTicket) {
+        const previewTicket = document.getElementById('logoPreviewTicket');
+        previewTicket.src = db.logoTicket;
+        previewTicket.style.display = 'block';
     }
 
     // CLEAR SENSITIVE FIELDS

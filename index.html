@@ -13,10 +13,6 @@
             <div class="header-logo-wrapper">
                 <img id="headerLogo" class="header-logo" src="" alt="" style="display:none;">
             </div>
-            <div class="header-text">
-                <h1>أمانة منطقة الرياض</h1>
-                <p>بلدية محافظة القويعية</p>
-            </div>
             <button class="settings-icon" onclick="openAdminLoginModal()">
                 ⚙️
             </button>
@@ -36,8 +32,8 @@
                 <h2>نأمل تعبئة البيانات وطباعة رقم الانتظار</h2>
                 
                 <div class="form-group">
-                    <label>اسم المراجع *</label>
-                    <input type="text" id="customerName" placeholder="أدخل اسم المراجع الكامل" autocomplete="off" required>
+                    <label>رقم الهوية *</label>
+                    <input type="text" id="customerName" placeholder="أدخل رقم الهوية" autocomplete="off" required>
                 </div>
 
                 <div class="form-group">
@@ -102,17 +98,33 @@
                     <textarea id="footerMessage" placeholder="رسالة اختيارية تظهر في التذكرة (مثل: جميع الحقوق محفوظة)"></textarea>
                 </div>
 
+                <!-- شعار الهيدر -->
                 <div class="form-group">
-                    <label>شعار المنشأة (يظهر في الهيدر والتذكرة)</label>
+                    <label>شعار الهيدر (يظهر في أعلى الصفحة)</label>
                     <div class="file-input-wrapper">
-                        <input type="file" id="logoFile" accept="image/*" onchange="previewLogo(event)">
-                        <label for="logoFile" class="file-input-label">
-                            انقر لرفع الشعار أو اسحب الملف هنا
+                        <input type="file" id="logoFileHeader" accept="image/*" onchange="previewLogoHeader(event)">
+                        <label for="logoFileHeader" class="file-input-label">
+                            انقر لرفع شعار الهيدر أو اسحب الملف هنا
                         </label>
-                        <div class="file-name" id="logoFileName"></div>
+                        <div class="file-name" id="logoFileNameHeader"></div>
                     </div>
                     <div style="margin-top: 15px; text-align: center;">
-                        <img id="logoPreview" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
+                        <img id="logoPreviewHeader" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
+                    </div>
+                </div>
+
+                <!-- شعار التذكرة -->
+                <div class="form-group">
+                    <label>شعار التذكرة (يظهر في أعلى التذكرة)</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="logoFileTicket" accept="image/*" onchange="previewLogoTicket(event)">
+                        <label for="logoFileTicket" class="file-input-label">
+                            انقر لرفع شعار التذكرة أو اسحب الملف هنا
+                        </label>
+                        <div class="file-name" id="logoFileNameTicket"></div>
+                    </div>
+                    <div style="margin-top: 15px; text-align: center;">
+                        <img id="logoPreviewTicket" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
                     </div>
                 </div>
 
@@ -175,7 +187,7 @@
                 <h2>📜 سجل التذاكر</h2>
                 
                 <div style="margin-bottom: 15px;">
-                    <input type="text" id="searchHistory" placeholder="🔍 ابحث عن المراجع أو الخدمة..." 
+                    <input type="text" id="searchHistory" placeholder="🔍 ابحث عن رقم الهوية أو الخدمة..." 
                            onkeyup="filterHistory()" style="margin-bottom: 10px;">
                 </div>
 
@@ -185,7 +197,7 @@
                             <tr>
                                 <th>#</th>
                                 <th>الرقم</th>
-                                <th>المراجع</th>
+                                <th>رقم الهوية</th>
                                 <th>الخدمة</th>
                                 <th>التاريخ والوقت</th>
                                 <th>الحالة</th>
@@ -250,7 +262,7 @@
             <button class="close-btn" onclick="closePrintModal()">&times;</button>
             <div class="ticket-preview">
                 <div class="ticket-header">
-                    <img id="modalLogo" class="ticket-logo" src="" alt="">
+                    <img id="modalLogo" class="ticket-logo" src="" alt="" style="display:none;">
                     <div id="modalOrgName" style="font-weight: bold; font-size: 14px;"></div>
                 </div>
                 
@@ -260,7 +272,7 @@
                 </div>
 
                 <div style="font-size: 11px; margin: 10px 0; line-height: 1.8;">
-                    <div><strong>المراجع:</strong> <span id="modalCustomer"></span></div>
+                    <div><strong>رقم الهوية:</strong> <span id="modalCustomer"></span></div>
                     <div><strong>الخدمة:</strong> <span id="modalService"></span></div>
                     <div><strong>التاريخ:</strong> <span id="modalDate"></span></div>
                     <div><strong>الوقت:</strong> <span id="modalTime"></span></div>
