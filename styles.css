@@ -33,7 +33,7 @@ body {
 
 /* HEADER */
 .header {
-    background: linear-gradient(135deg, #01676b 0%, #016948 100%);
+    background: url('nav-bg.jpg') center/cover no-repeat;
     color: white;
     padding: 12px 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -133,8 +133,14 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* CARDS */
@@ -320,10 +326,21 @@ textarea {
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.stat-card.blue { background: linear-gradient(135deg, #01676b 0%, #016948 100%); }
-stat-card.green { background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%); }
-.stat-card.orange { background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); }
-.stat-card.purple { background: linear-gradient(135deg, #26c6da 0%, #0097a7 100%); }
+.stat-card.blue {
+    background: linear-gradient(135deg, #01676b 0%, #016948 100%);
+}
+
+stat-card.green {
+    background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%);
+}
+
+.stat-card.orange {
+    background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+}
+
+.stat-card.purple {
+    background: linear-gradient(135deg, #26c6da 0%, #0097a7 100%);
+}
 
 .stat-card h4 {
     font-size: 12px;
@@ -442,8 +459,14 @@ stat-card.green { background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%);
 }
 
 @keyframes slideDown {
-    from { transform: translateY(-20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .alert-success {
@@ -508,152 +531,3 @@ stat-card.green { background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%);
 table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
-}
-
-th, td {
-    padding: 12px;
-    text-align: right;
-    border-bottom: 1px solid var(--border-color);
-}
-
-th {
-    background: var(--primary-color);
-    color: white;
-    font-weight: 600;
-}
-
-tr:hover {
-    background: var(--bg-light);
-}
-
-/* BADGES */
-.badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    margin: 0 5px;
-}
-
-.badge-primary {
-    background: #e3f2fd;
-    color: var(--primary-color);
-}
-
-.badge-success {
-    background: #e8f5e9;
-    color: var(--success-color);
-}
-
-/* SERVICES GRID */
-.services-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.service-btn {
-    padding: 12px;
-    border: 2px solid var(--border-color);
-    background: white;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    text-align: center;
-    line-height: 1.4;
-    color: var(--text-dark);
-    touch-action: manipulation;
-}
-
-.service-btn:hover {
-    border-color: var(--primary-color);
-    background: #f0f7ff;
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(1, 105, 72, 0.2);
-}
-
-.service-btn.selected {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-    box-shadow: 0 6px 20px rgba(1, 105, 72, 0.4);
-}
-
-.selected-service-box {
-    margin-top: 15px;
-    padding: 10px;
-    background: #e3f2fd;
-    border-radius: 8px;
-    text-align: center;
-    font-weight: 600;
-    color: #016948;
-}
-
-/* RESPONSIVE - MOBILE SMALL */
-@media (max-width: 480px) {
-    .header {
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .settings-icon {
-        position: static;
-        transform: none;
-    }
-
-    .header-logo {
-        max-height: 60px;
-    }
-
-    .btn-primary {
-        font-size: 14px;
-        padding: 12px;
-    }
-
-    .queue-number {
-        padding: 24px;
-    }
-
-    .queue-number .number {
-        font-size: 40px;
-    }
-}
-
-/* RESPONSIVE - TABLET */
-@media (min-width: 600px) and (max-width: 1024px) {
-    .container {
-        max-width: 900px;
-        padding: 16px;
-    }
-
-    .card {
-        padding: 24px;
-    }
-
-    .services-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media print {
-    body {
-        background: white;
-    }
-
-    .tabs, .btn, .card h2, .header, #adminLoginModal, #adminMenuModal {
-        display: none;
-    }
-
-    .ticket-preview {
-        box-shadow: none;
-        border: none;
-        margin: 0;
-        padding: 0;
-    }
-}
