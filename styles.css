@@ -35,7 +35,7 @@ body {
 .header {
     background: linear-gradient(135deg, #01676b 0%, #016948 100%);
     color: white;
-    padding: 20px;
+    padding: 12px 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     margin-bottom: 30px;
     border-radius: 10px;
@@ -51,12 +51,14 @@ body {
 }
 
 .header-logo {
-    width: 70px;
-    height: 70px;
-    border-radius: 8px;
+    max-height: 80px;
+    width: auto;
+    border-radius: 0;
     object-fit: contain;
-    background: rgba(255,255,255,0.15);
-    padding: 5px;
+    background: none;
+    padding: 0;
+    border: none;
+    box-shadow: none;
 }
 
 /* أيقونة الترس في طرف الهيدر */
@@ -319,7 +321,7 @@ textarea {
 }
 
 .stat-card.blue { background: linear-gradient(135deg, #01676b 0%, #016948 100%); }
-.stat-card.green { background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%); }
+stat-card.green { background: linear-gradient(135deg, #01a07c 0%, #018b6a 100%); }
 .stat-card.orange { background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%); }
 .stat-card.purple { background: linear-gradient(135deg, #26c6da 0%, #0097a7 100%); }
 
@@ -606,8 +608,7 @@ tr:hover {
     }
 
     .header-logo {
-        width: 60px;
-        height: 60px;
+        max-height: 60px;
     }
 
     .btn-primary {
