@@ -292,8 +292,8 @@ textarea {
 
 .service-btn {
     padding: 12px;
-    border: 2px solid var(--border-color);
-    background: white;
+    border: 2px solid var(--primary-color);
+    background: linear-gradient(135deg, #f0f9f6 0%, #ffffff 100%);
     border-radius: 10px;
     cursor: pointer;
     font-size: 13px;
@@ -301,19 +301,19 @@ textarea {
     transition: all 0.3s ease;
     text-align: center;
     line-height: 1.4;
-    color: var(--text-dark);
+    color: var(--primary-color);
     touch-action: manipulation;
 }
 
 .service-btn:hover {
     border-color: var(--primary-color);
-    background: #f0f7ff;
+    background: linear-gradient(135deg, #e3f2ed 0%, #f0f9f6 100%);
     transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(1, 105, 72, 0.2);
+    box-shadow: 0 4px 12px rgba(1, 105, 72, 0.3);
 }
 
 .service-btn.selected {
-    background: var(--primary-color);
+    background: linear-gradient(135deg, #018b72 0%, #016948 100%);
     color: white;
     border-color: var(--primary-color);
     box-shadow: 0 6px 20px rgba(1, 105, 72, 0.4);
@@ -322,11 +322,12 @@ textarea {
 .selected-service-box {
     margin-top: 15px;
     padding: 10px;
-    background: #e3f2fd;
+    background: linear-gradient(135deg, #d4edda 0%, #e3f2ed 100%);
     border-radius: 8px;
     text-align: center;
     font-weight: 600;
     color: #016948;
+    border: 2px solid #01a07c;
 }
 
 /* QUEUE DISPLAY */
@@ -478,5 +479,4 @@ textarea {
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    line-height: 1.6;
-    text-align: center;
+    
