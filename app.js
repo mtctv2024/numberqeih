@@ -1,7 +1,7 @@
 // ========== المتغيرات العامة ==========
 let currentQueue = parseInt(localStorage.getItem('currentQueue')) || 1;
 let ticketHistory = JSON.parse(localStorage.getItem('ticketHistory')) || [];
-let adminPassword = localStorage.getItem('adminPassword') || '1234';
+let adminPassword = localStorage.getItem('adminPassword') || 'admin';
 let isAdminAuthenticated = false;
 
 // ========== التهيئة عند تحميل الصفحة ==========
@@ -107,7 +107,7 @@ function generateAndPrintTicket() {
 
 // ========== عرض نافذة الطباعة ==========
 function showPrintModal(ticket) {
-    const orgName = localStorage.getItem('orgName') || 'أمانة منطقة الرياض - بلدية محافظة القويعية';
+    const orgName = localStorage.getItem('orgName') || 'اسم المنشأة';
     const logoTicket = localStorage.getItem('logoTicket') || '';
     const footerMessage = localStorage.getItem('footerMessage') || '';
     
