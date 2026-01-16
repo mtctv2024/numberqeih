@@ -84,6 +84,34 @@
             </div>
             <div class="card">
                 <h2>🖨️ إعدادات الطباعة</h2>
+<div class="card">
+    <h2>🔐 تغيير رمز مرور المسؤول</h2>
+    
+    <div class="form-group">
+        <label>رمز المرور الحالي</label>
+        <input type="password" id="currentPassword" placeholder="أدخل رمز المرور الحالي">
+    </div>
+    
+    <div class="form-group">
+        <label>رمز المرور الجديد</label>
+        <input type="password" id="newPassword" placeholder="أدخل رمز المرور الجديد">
+    </div>
+    
+    <div class="form-group">
+        <label>تأكيد رمز المرور الجديد</label>
+        <input type="password" id="confirmPassword" placeholder="أعد إدخال رمز المرور الجديد">
+    </div>
+    
+    <button class="btn btn-primary" onclick="changeAdminPassword()">🔒 تغيير رمز المرور</button>
+    
+    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+        <small style="color: #856404;">
+            <strong>تنبيه:</strong> احتفظ برمز المرور في مكان آمن. إذا فقدته، ستحتاج لإعادة تعيين البيانات.
+        </small>
+    </div>
+</div>
+
+
                 <div class="form-group">
                     <label>وقت التصفير اليومي</label>
                     <div class="inline-group">

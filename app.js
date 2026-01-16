@@ -648,3 +648,52 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+// ========== تغيير رمز مرور المسؤول ==========
+function changeAdminPassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    // التحقق من إدخال جميع الحقول
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showAlert('الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+    
+    // التحقق من رمز المرور الحالي
+    if (currentPassword !== adminPassword) {
+        showAlert('رمز المرور الحالي غير صحيح!', 'error');
+        document.getElementById('currentPassword').value = '';
+        return;
+    }
+    
+    // التحقق من طول رمز المرور الجديد
+    if (newPassword.length < 4) {
+        showAlert('رمز المرور الجديد يجب أن يكون 4 أحرف على الأقل', 'error');
+        return;
+    }
+    
+    // التحقق من تطابق رمز المرور الجديد
+    if (newPassword !== confirmPassword) {
+        showAlert('رمز المرور الجديد غير متطابق!', 'error');
+        document.getElementById('confirmPassword').value = '';
+        return;
+    }
+    
+    // التحقق من أن رمز المرور الجديد مختلف عن القديم
+    if (newPassword === currentPassword) {
+        showAlert('رمز المرور الجديد يجب أن يكون مختلفاً عن القديم', 'error');
+        return;
+    }
+    
+    // حفظ رمز المرور الجديد
+    adminPassword = newPassword;
+    localStorage.setItem('adminPassword', newPassword);
+    
+    // مسح الحقول
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    
+    showAlert('تم تغيير رمز المرور بنجاح! ✓', 'success');
+}
