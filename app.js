@@ -1,545 +1,650 @@
-// DATABASE
-let db = {
-    queueCounter: 1,
-    lastReset: new Date().toLocaleDateString(),
-    organizationName: 'المنشأة',
-    footerMessage: 'جميع الحقوق محفوظة',
-    resetTime: '05:00',
-    paperWidth: '3',
-    logoHeader: null, // شعار الهيدر
-    logoTicket: null, // شعار التذكرة
-    tickets: [],
-    settings: {
-        printer: ''
-    }
+// ========== المتغيرات العامة ==========
+let currentQueue = parseInt(localStorage.getItem('currentQueue')) || 1;
+let ticketHistory = JSON.parse(localStorage.getItem('ticketHistory')) || [];
+let adminPassword = localStorage.getItem('adminPassword') || '1234';
+let isAdminAuthenticated = false;
+
+// ========== التهيئة عند تحميل الصفحة ==========
+window.onload = function() {
+    updateQueueDisplay();
+    loadSettings();
+    updateTimestamp();
+    setInterval(updateTimestamp, 1000);
+    checkDailyReset();
+    setInterval(checkDailyReset, 60000);
 };
 
-function loadDatabase() {
-    const saved = localStorage.getItem('queueDB');
-    if (saved) {
-        db = JSON.parse(saved);
-    }
-    updateQueue();
-    updateStatistics();
-}
-
-function saveDatabase() {
-    localStorage.setItem('queueDB', JSON.stringify(db));
-}
-
-// TABS
-function showTab(tabName, ev) {
-    const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => tab.classList.remove('active'));
-
-    const buttons = document.querySelectorAll('.tab-btn');
-    buttons.forEach(btn => btn.classList.remove('active'));
-
-    const tab = document.getElementById(tabName);
-    if (tab) tab.classList.add('active');
-
-    if (ev && ev.target) {
-        ev.target.classList.add('active');
-    }
-
-    if (tabName === 'stats') {
-        updateStatistics();
-    }
-}
-
-// SERVICES
-function selectService(button) {
-    const allButtons = document.querySelectorAll('.service-btn');
-    allButtons.forEach(btn => btn.classList.remove('selected'));
-
-    button.classList.add('selected');
-
-    const service = button.getAttribute('data-service');
-    document.getElementById('serviceType').value = service;
-
-    document.getElementById('selectedServiceDisplay').style.display = 'block';
-    document.getElementById('selectedServiceText').textContent = service;
-}
-
-// TICKET GENERATION
-function generateAndPrintTicket() {
-    const nameInput = document.getElementById('customerName');
-    const customerName = nameInput.value.trim();
-    const serviceType = document.getElementById('serviceType').value;
-
-    if (!customerName || !serviceType) {
-        showAlert('الرجاء ملء جميع الحقول المطلوبة', 'error');
+// ========== إدارة التبويبات ==========
+function showTab(tabName, event) {
+    // إذا كان التبويب محمي، تحقق من الصلاحيات
+    if ((tabName === 'settings' || tabName === 'history' || tabName === 'stats') && !isAdminAuthenticated) {
+        openAdminLoginModal();
         return;
     }
-
-    checkDailyReset();
-
-    const ticket = {
-        id: Date.now(),
-        queueNumber: String(db.queueCounter).padStart(3, '0'),
-        customerName: customerName,
-        serviceType: serviceType,
-        timestamp: new Date(),
-        status: 'pending'
-    };
-
-    db.tickets.unshift(ticket);
-    db.queueCounter++;
-    saveDatabase();
-
-    showPrintPreview(ticket, true);
-
-    // PRIVACY
-    nameInput.value = '';
-    document.getElementById('serviceType').value = '';
-    document.getElementById('selectedServiceDisplay').style.display = 'none';
-    const allButtons = document.querySelectorAll('.service-btn');
-    allButtons.forEach(btn => btn.classList.remove('selected'));
-
-    updateQueue();
-    updateStatistics();
-
-    showAlert('تم إنشاء التذكرة بنجاح ✓ وتم مسح رقم الهوية من الحقول', 'success');
-}
-
-function checkDailyReset() {
-    const today = new Date().toLocaleDateString();
-    const savedDate = db.lastReset;
-
-    if (today !== savedDate) {
-        db.queueCounter = 1;
-        db.lastReset = today;
-        saveDatabase();
+    
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    const buttons = document.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    document.getElementById(tabName).classList.add('active');
+    if (event) event.target.classList.add('active');
+    
+    if (tabName === 'history') {
+        loadHistory();
+    }
+    if (tabName === 'stats') {
+        loadStats();
     }
 }
 
-function updateQueue() {
-    const queueNum = String(db.queueCounter).padStart(3, '0');
-    document.getElementById('currentQueue').textContent = queueNum;
+// ========== اختيار الخدمة ==========
+function selectService(button) {
+    const buttons = document.querySelectorAll('.service-btn');
+    buttons.forEach(btn => btn.classList.remove('selected'));
     
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString('ar-SA');
-    const dateStr = now.toLocaleDateString('ar-SA');
-    document.getElementById('timestamp').textContent = `${dateStr} | ${timeStr}`;
+    button.classList.add('selected');
+    
+    const service = button.getAttribute('data-service');
+    document.getElementById('serviceType').value = service;
+    
+    document.getElementById('selectedServiceText').textContent = service;
+    document.getElementById('selectedServiceDisplay').style.display = 'block';
+    
+    showAlert('تم اختيار: ' + service, 'success');
 }
 
-// PRINT PREVIEW
-function showPrintPreview(ticket, autoPrint = false) {
+// ========== توليد وطباعة التذكرة ==========
+function generateAndPrintTicket() {
+    const customerName = document.getElementById('customerName').value.trim();
+    const serviceType = document.getElementById('serviceType').value;
+    
+    if (!customerName) {
+        showAlert('الرجاء إدخال رقم الهوية', 'error');
+        return;
+    }
+    
+    if (!serviceType) {
+        showAlert('الرجاء اختيار نوع الخدمة', 'error');
+        return;
+    }
+    
+    const queueNum = String(currentQueue).padStart(3, '0');
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ar-SA');
+    const timeStr = now.toLocaleTimeString('ar-SA');
+    
+    const ticket = {
+        id: Date.now(),
+        queueNumber: queueNum,
+        customerName: customerName,
+        serviceType: serviceType,
+        date: dateStr,
+        time: timeStr,
+        timestamp: now.getTime(),
+        status: 'مطبوع'
+    };
+    
+    ticketHistory.push(ticket);
+    localStorage.setItem('ticketHistory', JSON.stringify(ticketHistory));
+    
+    currentQueue++;
+    localStorage.setItem('currentQueue', currentQueue);
+    updateQueueDisplay();
+    
+    showPrintModal(ticket);
+    
+    document.getElementById('customerName').value = '';
+    document.getElementById('serviceType').value = '';
+    document.getElementById('selectedServiceDisplay').style.display = 'none';
+    
+    const buttons = document.querySelectorAll('.service-btn');
+    buttons.forEach(btn => btn.classList.remove('selected'));
+    
+    showAlert('تم إنشاء التذكرة بنجاح!', 'success');
+}
+
+// ========== عرض نافذة الطباعة ==========
+function showPrintModal(ticket) {
+    const orgName = localStorage.getItem('orgName') || 'أمانة منطقة الرياض - بلدية محافظة القويعية';
+    const logoTicket = localStorage.getItem('logoTicket') || '';
+    const footerMessage = localStorage.getItem('footerMessage') || '';
+    
+    document.getElementById('modalOrgName').textContent = orgName;
     document.getElementById('modalQueueNum').textContent = ticket.queueNumber;
     document.getElementById('modalCustomer').textContent = ticket.customerName;
     document.getElementById('modalService').textContent = ticket.serviceType;
+    document.getElementById('modalDate').textContent = ticket.date;
+    document.getElementById('modalTime').textContent = ticket.time;
+    document.getElementById('modalFooter').textContent = footerMessage;
     
-    const date = new Date(ticket.timestamp);
-    document.getElementById('modalDate').textContent = date.toLocaleDateString('ar-SA');
-    document.getElementById('modalTime').textContent = date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
-    
-    document.getElementById('modalOrgName').textContent = db.organizationName;
-    document.getElementById('modalFooter').textContent = db.footerMessage;
-
     const modalLogo = document.getElementById('modalLogo');
-    if (db.logoTicket) {
-        modalLogo.src = db.logoTicket;
+    if (logoTicket) {
+        modalLogo.src = logoTicket;
         modalLogo.style.display = 'block';
     } else {
         modalLogo.style.display = 'none';
     }
-
-    const modal = document.getElementById('printModal');
-    modal.classList.add('active');
-
-    if (autoPrint) {
-        setTimeout(() => {
-            printTicketAndClose();
-        }, 300);
-    }
+    
+    document.getElementById('printModal').classList.add('active');
 }
 
+// ========== طباعة التذكرة (الحل الأكثر موثوقية) ==========
+function printTicketAndClose() {
+    // الحصول على محتوى التذكرة
+    const ticketContent = document.querySelector('#printModal .ticket-preview').innerHTML;
+    
+    // إنشاء نافذة جديدة للطباعة
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="ar" dir="rtl">
+        <head>
+            <meta charset="UTF-8">
+            <title>طباعة التذكرة</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body {
+                    font-family: 'Bahij', 'Noto Sans Arabic', 'Segoe UI', sans-serif;
+                    padding: 20px;
+                    direction: rtl;
+                    text-align: center;
+                }
+                .ticket-preview {
+                    max-width: 380px;
+                    margin: 0 auto;
+                    font-family: 'Courier New', monospace;
+                    font-size: 12px;
+                    line-height: 1.6;
+                }
+                .ticket-header {
+                    border-bottom: 2px dashed #ddd;
+                    padding-bottom: 10px;
+                    margin-bottom: 10px;
+                }
+                .ticket-logo {
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 4px;
+                    object-fit: cover;
+                    margin: 0 auto 10px;
+                    display: block;
+                }
+                .ticket-number {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #016948;
+                    margin: 15px 0;
+                }
+                .ticket-footer {
+                    border-top: 2px dashed #ddd;
+                    padding-top: 10px;
+                    margin-top: 10px;
+                    font-size: 10px;
+                    color: #666;
+                }
+                @media print {
+                    body { padding: 0; }
+                    @page { margin: 10mm; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="ticket-preview">${ticketContent}</div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    closePrintModal();
+}
+
+// ========== إغلاق نافذة الطباعة ==========
 function closePrintModal() {
     document.getElementById('printModal').classList.remove('active');
 }
 
-function printTicketAndClose() {
-    if (window.Android && window.Android.printTicket) {
-        const payload = {
-            type: 'PRINT_TICKET',
-            printer: db.settings.printer || null,
-            ticketHtml: document.querySelector('.ticket-preview').innerHTML
-        };
-        window.Android.printTicket(JSON.stringify(payload));
-    } else {
-        window.print();
-    }
-    closePrintModal();
-    showAlert('تم إرسال التذكرة للطابعة ✓', 'success');
+// ========== تحديث عرض رقم الانتظار ==========
+function updateQueueDisplay() {
+    const queueNum = String(currentQueue).padStart(3, '0');
+    document.getElementById('currentQueue').textContent = queueNum;
 }
 
-// TEST PRINT
-function testPrint() {
-    const testTicket = {
-        queueNumber: '999',
-        customerName: '1234567890',
-        serviceType: 'اختبار',
-        timestamp: new Date()
-    };
-    showPrintPreview(testTicket, false);
-    showAlert('هذه تذكرة اختبار - لم يتم حفظها', 'info');
+// ========== تحديث الطابع الزمني ==========
+function updateTimestamp() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ar-SA');
+    const timeStr = now.toLocaleTimeString('ar-SA');
+    document.getElementById('timestamp').textContent = `${dateStr} | ${timeStr}`;
 }
 
-// SETTINGS
-function saveSettings() {
-    const orgName = document.getElementById('orgName').value.trim();
-    const footerMsg = document.getElementById('footerMessage').value.trim();
-    const resetTime = document.getElementById('resetTime').value;
-    const paperWidth = document.getElementById('paperWidth').value;
-    const printer = document.getElementById('printerSelect').value;
-
-    if (!orgName) {
-        showAlert('الرجاء إدخال اسم المنشأة', 'error');
-        return;
-    }
-
-    db.organizationName = orgName;
-    db.footerMessage = footerMsg || 'جميع الحقوق محفوظة';
-    db.resetTime = resetTime;
-    db.paperWidth = paperWidth;
-    db.settings.printer = printer;
-    saveDatabase();
-
-    showAlert('تم حفظ الإعدادات بنجاح ✓', 'success');
-}
-
-// شعار الهيدر
+// ========== معاينة الشعار (الهيدر) ==========
 function previewLogoHeader(event) {
     const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        db.logoHeader = e.target.result;
-
-        const preview = document.getElementById('logoPreviewHeader');
-        preview.src = db.logoHeader;
-        preview.style.display = 'block';
-
-        const headerLogo = document.getElementById('headerLogo');
-        headerLogo.src = db.logoHeader;
-        headerLogo.style.display = 'block';
-
-        document.getElementById('logoFileNameHeader').textContent = `✓ تم رفع: ${file.name}`;
-        saveDatabase();
-    };
-    reader.readAsDataURL(file);
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('logoPreviewHeader').src = e.target.result;
+            document.getElementById('logoPreviewHeader').style.display = 'block';
+            document.getElementById('logoFileNameHeader').textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
-// شعار التذكرة
+// ========== معاينة الشعار (التذكرة) ==========
 function previewLogoTicket(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('logoPreviewTicket').src = e.target.result;
+            document.getElementById('logoPreviewTicket').style.display = 'block';
+            document.getElementById('logoFileNameTicket').textContent = file.name;
+        };
+        reader.readAsDataURL(file);
+    }
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        db.logoTicket = e.target.result;
+// ========== حفظ الإعدادات ==========
+function saveSettings() {
+    const orgName = document.getElementById('orgName').value.trim();
+    const footerMessage = document.getElementById('footerMessage').value.trim();
+    const logoHeader = document.getElementById('logoPreviewHeader').src;
+    const logoTicket = document.getElementById('logoPreviewTicket').src;
+    const resetTime = document.getElementById('resetTime').value;
+    const paperWidth = document.getElementById('paperWidth').value;
+    const printerSelect = document.getElementById('printerSelect').value;
+    
+    if (orgName) localStorage.setItem('orgName', orgName);
+    if (footerMessage) localStorage.setItem('footerMessage', footerMessage);
+    if (logoHeader && logoHeader !== window.location.href) localStorage.setItem('logoHeader', logoHeader);
+    if (logoTicket && logoTicket !== window.location.href) localStorage.setItem('logoTicket', logoTicket);
+    if (resetTime) localStorage.setItem('resetTime', resetTime);
+    if (paperWidth) localStorage.setItem('paperWidth', paperWidth);
+    if (printerSelect) localStorage.setItem('printerSelect', printerSelect);
+    
+    showAlert('تم حفظ الإعدادات بنجاح!', 'success');
+    loadSettings();
+}
 
-        const preview = document.getElementById('logoPreviewTicket');
-        preview.src = db.logoTicket;
-        preview.style.display = 'block';
+// ========== تحميل الإعدادات ==========
+function loadSettings() {
+    const orgName = localStorage.getItem('orgName');
+    const footerMessage = localStorage.getItem('footerMessage');
+    const logoHeader = localStorage.getItem('logoHeader');
+    const logoTicket = localStorage.getItem('logoTicket');
+    const resetTime = localStorage.getItem('resetTime');
+    const paperWidth = localStorage.getItem('paperWidth');
+    const printerSelect = localStorage.getItem('printerSelect');
+    
+    if (orgName) document.getElementById('orgName').value = orgName;
+    if (footerMessage) document.getElementById('footerMessage').value = footerMessage;
+    if (resetTime) document.getElementById('resetTime').value = resetTime;
+    if (paperWidth) document.getElementById('paperWidth').value = paperWidth;
+    if (printerSelect) document.getElementById('printerSelect').value = printerSelect;
+    
+    if (logoHeader) {
+        document.getElementById('headerLogo').src = logoHeader;
+        document.getElementById('headerLogo').style.display = 'block';
+        document.getElementById('logoPreviewHeader').src = logoHeader;
+        document.getElementById('logoPreviewHeader').style.display = 'block';
+    }
+    
+    if (logoTicket) {
+        document.getElementById('logoPreviewTicket').src = logoTicket;
+        document.getElementById('logoPreviewTicket').style.display = 'block';
+    }
+}
 
-        document.getElementById('logoFileNameTicket').textContent = `✓ تم رفع: ${file.name}`;
-        saveDatabase();
+// ========== طباعة تجريبية ==========
+function testPrint() {
+    const testTicket = {
+        queueNumber: '000',
+        customerName: 'اختبار',
+        serviceType: 'اختبار الطباعة',
+        date: new Date().toLocaleDateString('ar-SA'),
+        time: new Date().toLocaleTimeString('ar-SA')
     };
-    reader.readAsDataURL(file);
+    showPrintModal(testTicket);
+    showAlert('تم فتح نافذة الطباعة التجريبية', 'info');
 }
 
-// RESET COUNTER (قياسي)
+// ========== إعادة تعيين العداد ==========
 function resetCounter() {
-    if (confirm('هل أنت متأكد من إعادة تعيين العداد؟ سيبدأ من 1')) {
-        db.queueCounter = 1;
-        db.lastReset = new Date().toLocaleDateString();
-        saveDatabase();
-        updateQueue();
-        showAlert('تم إعادة تعيين العداد ✓', 'success');
+    if (confirm('هل أنت متأكد من إعادة تعيين العداد إلى 1؟')) {
+        currentQueue = 1;
+        localStorage.setItem('currentQueue', currentQueue);
+        updateQueueDisplay();
+        showAlert('تم إعادة تعيين العداد بنجاح!', 'success');
     }
 }
 
-// RESET COUNTER NOW (زر التصفير الفوري)
+// ========== تصفير فوري ==========
 function resetCounterNow() {
-    const ok = confirm('تحذير: سيتم تصفير العداد فوراً وإعادة البدء من 1، هل تريد المتابعة؟');
-    if (!ok) return;
-
-    db.queueCounter = 1;
-    db.lastReset = new Date().toLocaleDateString();
-    saveDatabase();
-    updateQueue();
-    showAlert('تم تصفير العداد فوراً ✓', 'success');
-}
-
-function clearHistory() {
-    if (confirm('هل أنت متأكد من حذف السجل بالكامل؟ هذا لا يمكن التراجع عنه!')) {
-        db.tickets = [];
-        saveDatabase();
-        updateStatistics();
-        showAlert('تم حذف السجل ✓', 'success');
+    if (confirm('هل أنت متأكد من التصفير الفوري للعداد؟')) {
+        resetCounter();
     }
 }
 
+// ========== التحقق من التصفير اليومي ==========
+function checkDailyReset() {
+    const resetTime = localStorage.getItem('resetTime') || '05:00';
+    const now = new Date();
+    const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    const lastReset = localStorage.getItem('lastReset');
+    const today = now.toDateString();
+    
+    if (currentTime === resetTime && lastReset !== today) {
+        currentQueue = 1;
+        localStorage.setItem('currentQueue', currentQueue);
+        localStorage.setItem('lastReset', today);
+        updateQueueDisplay();
+    }
+}
+
+// ========== حذف السجل ==========
+function clearHistory() {
+    if (confirm('هل أنت متأكد من حذف جميع السجلات؟ لا يمكن التراجع عن هذا الإجراء!')) {
+        ticketHistory = [];
+        localStorage.setItem('ticketHistory', JSON.stringify(ticketHistory));
+        showAlert('تم حذف السجل بنجاح!', 'success');
+        loadHistory();
+    }
+}
+
+// ========== إعادة تعيين كامل ==========
 function resetAll() {
-    if (confirm('هل أنت متأكد من إعادة تعيين النظام بالكامل؟')) {
-        if (confirm('تحذير أخير: سيتم حذف جميع البيانات والإعدادات!')) {
+    if (confirm('هل أنت متأكد من إعادة تعيين جميع البيانات والإعدادات؟ لا يمكن التراجع عن هذا الإجراء!')) {
+        if (confirm('تحذير أخير: سيتم حذف كل شيء!')) {
             localStorage.clear();
-            location.reload();
+            currentQueue = 1;
+            ticketHistory = [];
+            adminPassword = '1234';
+            showAlert('تم إعادة تعيين كل شيء! سيتم تحديث الصفحة...', 'info');
+            setTimeout(() => location.reload(), 2000);
         }
     }
 }
 
-// HISTORY
+// ========== تحميل السجل ==========
+function loadHistory() {
+    const tbody = document.getElementById('historyBody');
+    tbody.innerHTML = '';
+    
+    if (ticketHistory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: #999;">لا توجد بيانات</td></tr>';
+        return;
+    }
+    
+    const sortedHistory = [...ticketHistory].reverse();
+    
+    sortedHistory.forEach((ticket, index) => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${ticket.queueNumber}</td>
+            <td>${ticket.customerName}</td>
+            <td>${ticket.serviceType}</td>
+            <td>${ticket.date} ${ticket.time}</td>
+            <td><span class="badge badge-success">${ticket.status}</span></td>
+        `;
+    });
+}
+
+// ========== فلترة السجل ==========
 function filterHistory() {
-    const searchTerm = document.getElementById('searchHistory').value.toLowerCase();
-    const table = document.getElementById('historyTable');
-
-    if (!db.tickets || db.tickets.length === 0) {
-        table.innerHTML = '<tr><td colspan="6" style="text-align:center; color: #999;">لا توجد بيانات</td></tr>';
-        return;
+    const searchValue = document.getElementById('searchHistory').value.toLowerCase();
+    const tbody = document.getElementById('historyBody');
+    const rows = tbody.getElementsByTagName('tr');
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchValue) ? '' : 'none';
     }
-
-    const filtered = db.tickets.filter(ticket => 
-        String(ticket.customerName).toLowerCase().includes(searchTerm) ||
-        ticket.serviceType.toLowerCase().includes(searchTerm)
-    );
-
-    if (filtered.length === 0) {
-        table.innerHTML = '<tr><td colspan="6" style="text-align:center; color: #999;">لم يتم العثور على نتائج</td></tr>';
-        return;
-    }
-
-    table.innerHTML = filtered.map(ticket => {
-        const date = new Date(ticket.timestamp);
-        const timeStr = date.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
-        const dateStr = date.toLocaleDateString('ar-SA');
-        return `
-            <tr>
-                <td>${db.tickets.indexOf(ticket) + 1}</td>
-                <td>${ticket.queueNumber}</td>
-                <td>${ticket.customerName}</td>
-                <td><span class="badge badge-primary">${ticket.serviceType}</span></td>
-                <td>${dateStr} ${timeStr}</td>
-                <td><span class="badge badge-success">مُنجز</span></td>
-            </tr>
-        `;
-    }).join('');
 }
 
-// EXPORT
-function exportToCSV() {
-    if (!db.tickets || db.tickets.length === 0) {
-        showAlert('لا توجد بيانات للتحميل', 'error');
-        return;
-    }
-
-    let csv = 'الرقم,رقم الهوية,الخدمة,التاريخ,الوقت\n';
-    db.tickets.forEach(ticket => {
-        const date = new Date(ticket.timestamp);
-        const dateStr = date.toLocaleDateString('ar-SA');
-        const timeStr = date.toLocaleTimeString('ar-SA');
-        csv += `${ticket.queueNumber},"${ticket.customerName}","${ticket.serviceType}",${dateStr},${timeStr}\n`;
-    });
-
-    downloadFile(csv, 'tickets.csv', 'text/csv');
-    showAlert('تم تحميل الملف ✓', 'success');
-}
-
-function exportToJSON() {
-    if (!db.tickets || db.tickets.length === 0) {
-        showAlert('لا توجد بيانات للتحميل', 'error');
-        return;
-    }
-
-    const json = JSON.stringify(db, null, 2);
-    downloadFile(json, 'tickets.json', 'application/json');
-    showAlert('تم تحميل الملف ✓', 'success');
-}
-
-function downloadFile(content, filename, type) {
-    const blob = new Blob([content], { type: type });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
-}
-
-// STATS
-function updateStatistics() {
+// ========== تحميل الإحصائيات ==========
+function loadStats() {
     const now = new Date();
-    const today = now.toLocaleDateString();
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-
-    document.getElementById('totalTickets').textContent = db.tickets.length;
-
-    const todayCount = db.tickets.filter(t => new Date(t.timestamp).toLocaleDateString() === today).length;
-    document.getElementById('todayTickets').textContent = todayCount;
-
-    const weekCount = db.tickets.filter(t => new Date(t.timestamp) > oneWeekAgo).length;
-    document.getElementById('weekTickets').textContent = weekCount;
-
-    const monthCount = db.tickets.filter(t => new Date(t.timestamp) > oneMonthAgo).length;
-    document.getElementById('monthTickets').textContent = monthCount;
-
-    updateServicesChart();
-    updateHourlyChart();
+    const today = now.toDateString();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    
+    const todayTickets = ticketHistory.filter(t => new Date(t.timestamp).toDateString() === today).length;
+    const weekTickets = ticketHistory.filter(t => new Date(t.timestamp) >= weekAgo).length;
+    const monthTickets = ticketHistory.filter(t => new Date(t.timestamp) >= monthAgo).length;
+    
+    document.getElementById('totalTickets').textContent = ticketHistory.length;
+    document.getElementById('todayTickets').textContent = todayTickets;
+    document.getElementById('weekTickets').textContent = weekTickets;
+    document.getElementById('monthTickets').textContent = monthTickets;
+    
+    loadServicesChart();
+    loadHourlyChart();
 }
 
-function updateServicesChart() {
-    const services = {};
-    db.tickets.forEach(ticket => {
-        services[ticket.serviceType] = (services[ticket.serviceType] || 0) + 1;
+// ========== رسم بياني للخدمات الأكثر طلباً ==========
+function loadServicesChart() {
+    const serviceCount = {};
+    ticketHistory.forEach(ticket => {
+        serviceCount[ticket.serviceType] = (serviceCount[ticket.serviceType] || 0) + 1;
     });
-
-    let html = '<div style="display: grid; gap: 10px;">';
-    Object.entries(services).forEach(([service, count]) => {
-        const percentage = Math.round((count / db.tickets.length) * 100);
+    
+    const chartDiv = document.getElementById('servicesChart');
+    
+    if (Object.keys(serviceCount).length === 0) {
+        chartDiv.innerHTML = '<p style="text-align: center; color: #999;">لا توجد بيانات</p>';
+        return;
+    }
+    
+    const sorted = Object.entries(serviceCount).sort((a, b) => b[1] - a[1]);
+    const maxCount = sorted[0][1];
+    
+    let html = '';
+    sorted.forEach(([service, count]) => {
+        const percentage = (count / maxCount) * 100;
         html += `
-            <div>
+            <div style="margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span>${service}</span>
-                    <span><strong>${count}</strong> (${percentage}%)</span>
+                    <span style="font-weight: 600;">${service}</span>
+                    <span style="color: #016948; font-weight: bold;">${count}</span>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                <div style="background: #e0e0e0; height: 25px; border-radius: 5px; overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, #018b72, #016948); height: 100%; width: ${percentage}%; transition: width 0.5s ease;"></div>
                 </div>
             </div>
         `;
     });
-    html += '</div>';
-
-    if (Object.keys(services).length === 0) {
-        html = '<p style="text-align: center; color: #999;">لا توجد بيانات</p>';
-    }
-
-    document.getElementById('servicesChart').innerHTML = html;
+    
+    chartDiv.innerHTML = html;
 }
 
-function updateHourlyChart() {
-    const hourly = {};
-    db.tickets.forEach(ticket => {
+// ========== رسم بياني للتوزيع بالساعات ==========
+function loadHourlyChart() {
+    const hourCount = {};
+    for (let i = 0; i < 24; i++) {
+        hourCount[i] = 0;
+    }
+    
+    ticketHistory.forEach(ticket => {
         const hour = new Date(ticket.timestamp).getHours();
-        const hourStr = String(hour).padStart(2, '0') + ':00';
-        hourly[hourStr] = (hourly[hourStr] || 0) + 1;
+        hourCount[hour]++;
     });
-
-    let html = '<div style="display: grid; gap: 10px;">';
-    const sortedHours = Object.keys(hourly).sort();
-    const maxCount = sortedHours.length ? Math.max(...Object.values(hourly)) : 0;
-
-    sortedHours.forEach(hour => {
-        const count = hourly[hour];
-        const percentage = maxCount ? Math.round((count / maxCount) * 100) : 0;
+    
+    const chartDiv = document.getElementById('hourlyChart');
+    
+    const totalTickets = ticketHistory.length;
+    if (totalTickets === 0) {
+        chartDiv.innerHTML = '<p style="text-align: center; color: #999;">لا توجد بيانات</p>';
+        return;
+    }
+    
+    const maxCount = Math.max(...Object.values(hourCount));
+    
+    let html = '<div style="display: flex; align-items: flex-end; justify-content: space-between; height: 200px; gap: 3px;">';
+    
+    for (let hour = 0; hour < 24; hour++) {
+        const count = hourCount[hour];
+        const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
         html += `
-            <div>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span>${hour}</span>
-                    <span><strong>${count}</strong></span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${percentage}%"></div>
-                </div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                <div style="font-size: 10px; color: #016948; font-weight: bold; margin-bottom: 5px;">${count > 0 ? count : ''}</div>
+                <div style="background: linear-gradient(to top, #016948, #018b72); width: 100%; height: ${height}%; min-height: ${count > 0 ? '5px' : '0'}; border-radius: 3px 3px 0 0;"></div>
+                <div style="font-size: 9px; color: #666; margin-top: 5px;">${hour}</div>
             </div>
         `;
-    });
-    html += '</div>';
-
-    if (!sortedHours.length) {
-        html = '<p style="text-align: center; color: #999;">لا توجد بيانات</p>';
     }
-
-    document.getElementById('hourlyChart').innerHTML = html;
+    
+    html += '</div>';
+    chartDiv.innerHTML = html;
 }
 
-// ALERTS
-function showAlert(message, type = 'info') {
+// ========== تصدير CSV ==========
+function exportToCSV() {
+    if (ticketHistory.length === 0) {
+        showAlert('لا توجد بيانات للتصدير', 'error');
+        return;
+    }
+    
+    let csv = 'الرقم,رقم الهوية,الخدمة,التاريخ,الوقت,الحالة\n';
+    ticketHistory.forEach(ticket => {
+        csv += `${ticket.queueNumber},${ticket.customerName},${ticket.serviceType},${ticket.date},${ticket.time},${ticket.status}\n`;
+    });
+    
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `tickets_${new Date().getTime()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showAlert('تم تحميل ملف CSV بنجاح!', 'success');
+}
+
+// ========== تصدير JSON ==========
+function exportToJSON() {
+    if (ticketHistory.length === 0) {
+        showAlert('لا توجد بيانات للتصدير', 'error');
+        return;
+    }
+    
+    const dataStr = JSON.stringify(ticketHistory, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `tickets_${new Date().getTime()}.json`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showAlert('تم تحميل ملف JSON بنجاح!', 'success');
+}
+
+// ========== عرض التنبيهات ==========
+function showAlert(message, type) {
     const alertContainer = document.getElementById('alertContainer');
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type}`;
-    alertDiv.textContent = message;
-    alertContainer.appendChild(alertDiv);
-
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type}`;
+    alert.textContent = message;
+    
+    alertContainer.appendChild(alert);
+    
     setTimeout(() => {
-        alertDiv.remove();
-    }, 4000);
+        alert.style.animation = 'slideDown 0.3s ease reverse';
+        setTimeout(() => alert.remove(), 300);
+    }, 3000);
 }
 
-// ADMIN MODALS
+// ========== فتح نافذة تسجيل دخول المسؤول ==========
 function openAdminLoginModal() {
-    document.getElementById('adminPasswordInput').value = '';
     document.getElementById('adminLoginModal').classList.add('active');
+    document.getElementById('adminPasswordInput').value = '';
+    document.getElementById('adminPasswordInput').focus();
 }
 
+// ========== إغلاق نافذة تسجيل دخول المسؤول ==========
 function closeAdminLoginModal() {
     document.getElementById('adminLoginModal').classList.remove('active');
 }
 
+// ========== إرسال كلمة مرور المسؤول ==========
+function submitAdminPassword() {
+    const inputPassword = document.getElementById('adminPasswordInput').value;
+    
+    if (inputPassword === adminPassword) {
+        isAdminAuthenticated = true;
+        closeAdminLoginModal();
+        openAdminMenuModal();
+    } else {
+        showAlert('كلمة المرور غير صحيحة!', 'error');
+        document.getElementById('adminPasswordInput').value = '';
+    }
+}
+
+// ========== فتح قائمة المسؤول ==========
+function openAdminMenuModal() {
+    document.getElementById('adminMenuModal').classList.add('active');
+}
+
+// ========== إغلاق قائمة المسؤول ==========
 function closeAdminMenuModal() {
     document.getElementById('adminMenuModal').classList.remove('active');
 }
 
-function submitAdminPassword() {
-    const pass = document.getElementById('adminPasswordInput').value.trim();
-    if (pass === 'admin') {
-        closeAdminLoginModal();
-        document.getElementById('adminMenuModal').classList.add('active');
-    } else {
-        showAlert('رمز المرور غير صحيح', 'error');
-    }
-}
-
+// ========== فتح تبويب محمي ==========
 function openProtectedTab(tabName) {
     closeAdminMenuModal();
+    
+    // إضافة الأزرار إذا لم تكن موجودة
+    const tabsContainer = document.querySelector('.tabs');
+    
+    if (!document.querySelector(`[onclick="showTab('settings', event)"]`)) {
+        const settingsBtn = document.createElement('button');
+        settingsBtn.className = 'tab-btn';
+        settingsBtn.onclick = (e) => showTab('settings', e);
+        settingsBtn.textContent = 'الإعدادات';
+        tabsContainer.appendChild(settingsBtn);
+    }
+    
+    if (!document.querySelector(`[onclick="showTab('history', event)"]`)) {
+        const historyBtn = document.createElement('button');
+        historyBtn.className = 'tab-btn';
+        historyBtn.onclick = (e) => showTab('history', e);
+        historyBtn.textContent = 'السجل';
+        tabsContainer.appendChild(historyBtn);
+    }
+    
+    if (!document.querySelector(`[onclick="showTab('stats', event)"]`)) {
+        const statsBtn = document.createElement('button');
+        statsBtn.className = 'tab-btn';
+        statsBtn.onclick = (e) => showTab('stats', e);
+        statsBtn.textContent = 'الإحصائيات';
+        tabsContainer.appendChild(statsBtn);
+    }
+    
     showTab(tabName, null);
 }
 
-// ON LOAD
-window.addEventListener('load', function() {
-    loadDatabase();
-
-    document.getElementById('orgName').value = db.organizationName;
-    document.getElementById('footerMessage').value = db.footerMessage;
-    document.getElementById('resetTime').value = db.resetTime;
-    document.getElementById('paperWidth').value = db.paperWidth;
-
-    if (db.settings && db.settings.printer) {
-        const printerSelect = document.getElementById('printerSelect');
-        if (printerSelect) printerSelect.value = db.settings.printer;
-    }
-
-    // شعار الهيدر
-    if (db.logoHeader) {
-        const previewHeader = document.getElementById('logoPreviewHeader');
-        previewHeader.src = db.logoHeader;
-        previewHeader.style.display = 'block';
-
-        const headerLogo = document.getElementById('headerLogo');
-        headerLogo.src = db.logoHeader;
-        headerLogo.style.display = 'block';
-    }
-
-    // شعار التذكرة
-    if (db.logoTicket) {
-        const previewTicket = document.getElementById('logoPreviewTicket');
-        previewTicket.src = db.logoTicket;
-        previewTicket.style.display = 'block';
-    }
-
-    // CLEAR SENSITIVE FIELDS
-    document.getElementById('customerName').value = '';
-    document.getElementById('serviceType').value = '';
-    document.getElementById('selectedServiceDisplay').style.display = 'none';
-    const allButtons = document.querySelectorAll('.service-btn');
-    allButtons.forEach(btn => btn.classList.remove('selected'));
-
-    updateStatistics();
-    filterHistory();
+// ========== دعم Enter للنماذج ==========
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('adminPasswordInput')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            submitAdminPassword();
+        }
+    });
 });
-
-// SCHEDULED RESET CHECK
-setInterval(checkDailyReset, 60000);
