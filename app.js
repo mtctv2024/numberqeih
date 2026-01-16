@@ -1,7 +1,7 @@
 // ========== المتغيرات العامة ==========
 let currentQueue = parseInt(localStorage.getItem('currentQueue')) || 1;
 let ticketHistory = JSON.parse(localStorage.getItem('ticketHistory')) || [];
-let adminPassword = localStorage.getItem('adminPassword') || 'admin';
+let adminPassword = localStorage.getItem('adminPassword') || '1234';
 let isAdminAuthenticated = false;
 
 // ========== التهيئة عند تحميل الصفحة ==========
@@ -16,7 +16,6 @@ window.onload = function() {
 
 // ========== إدارة التبويبات ==========
 function showTab(tabName, event) {
-    // إذا كان التبويب محمي، تحقق من الصلاحيات
     if ((tabName === 'settings' || tabName === 'history' || tabName === 'stats') && !isAdminAuthenticated) {
         openAdminLoginModal();
         return;
@@ -29,7 +28,7 @@ function showTab(tabName, event) {
     buttons.forEach(btn => btn.classList.remove('active'));
     
     document.getElementById(tabName).classList.add('active');
-    if (event) event.target.classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
     
     if (tabName === 'history') {
         loadHistory();
@@ -107,7 +106,7 @@ function generateAndPrintTicket() {
 
 // ========== عرض نافذة الطباعة ==========
 function showPrintModal(ticket) {
-    const orgName = localStorage.getItem('orgName') || 'اسم المنشأة';
+    const orgName = localStorage.getItem('orgName') || 'أمانة منطقة الرياض - بلدية محافظة القويعية';
     const logoTicket = localStorage.getItem('logoTicket') || '';
     const footerMessage = localStorage.getItem('footerMessage') || '';
     
@@ -132,10 +131,7 @@ function showPrintModal(ticket) {
 
 // ========== طباعة التذكرة (الحل الأكثر موثوقية) ==========
 function printTicketAndClose() {
-    // الحصول على محتوى التذكرة
     const ticketContent = document.querySelector('#printModal .ticket-preview').innerHTML;
-    
-    // إنشاء نافذة جديدة للطباعة
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     
     printWindow.document.write(`
@@ -610,10 +606,9 @@ function closeAdminMenuModal() {
 function openProtectedTab(tabName) {
     closeAdminMenuModal();
     
-    // إضافة الأزرار إذا لم تكن موجودة
     const tabsContainer = document.querySelector('.tabs');
     
-    if (!document.querySelector(`[onclick="showTab('settings', event)"]`)) {
+    if (!document.querySelector(`[onclick*="showTab('settings'"]`)) {
         const settingsBtn = document.createElement('button');
         settingsBtn.className = 'tab-btn';
         settingsBtn.onclick = (e) => showTab('settings', e);
@@ -621,7 +616,7 @@ function openProtectedTab(tabName) {
         tabsContainer.appendChild(settingsBtn);
     }
     
-    if (!document.querySelector(`[onclick="showTab('history', event)"]`)) {
+    if (!document.querySelector(`[onclick*="showTab('history'"]`)) {
         const historyBtn = document.createElement('button');
         historyBtn.className = 'tab-btn';
         historyBtn.onclick = (e) => showTab('history', e);
@@ -629,7 +624,7 @@ function openProtectedTab(tabName) {
         tabsContainer.appendChild(historyBtn);
     }
     
-    if (!document.querySelector(`[onclick="showTab('stats', event)"]`)) {
+    if (!document.querySelector(`[onclick*="showTab('stats'"]`)) {
         const statsBtn = document.createElement('button');
         statsBtn.className = 'tab-btn';
         statsBtn.onclick = (e) => showTab('stats', e);
@@ -637,8 +632,55 @@ function openProtectedTab(tabName) {
         tabsContainer.appendChild(statsBtn);
     }
     
-    showTab(tabName, null);
+    const targetButton = document.querySelector(`[onclick*="showTab('${tabName}'"]`);
+    if (targetButton) {
+        showTab(tabName, { target: targetButton });
+    }
 }
+
+// ========== تغيير رمز مرور المسؤول ==========
+function changeAdminPassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+        showAlert('الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+    
+    if (currentPassword !== adminPassword) {
+        showAlert('رمز المرور الحالي غير صحيح!', 'error');
+        document.getElementById('currentPassword').value = '';
+        return;
+    }
+    
+    if (newPassword.length < 4) {
+        showAlert('رمز المرور الجديد يجب أن يكون 4 أحرف على الأقل', 'error');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showAlert('رمز المرور الجديد غير متطابق!', 'error');
+        document.getElementById('confirmPassword').value = '';
+        return;
+    }
+    
+    if (newPassword === currentPassword) {
+        showAlert('رمز المرور الجديد يجب أن يكون مختلفاً عن القديم', 'error');
+        return;
+    }
+    
+    adminPassword = newPassword;
+    localStorage.setItem('adminPassword', newPassword);
+    
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+    
+    showAlert('تم تغيير رمز المرور بنجاح! ✓', 'success');
+}
+
 
 // ========== دعم Enter للنماذج ==========
 document.addEventListener('DOMContentLoaded', function() {
@@ -648,52 +690,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-// ========== تغيير رمز مرور المسؤول ==========
-function changeAdminPassword() {
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-    
-    // التحقق من إدخال جميع الحقول
-    if (!currentPassword || !newPassword || !confirmPassword) {
-        showAlert('الرجاء ملء جميع الحقول', 'error');
-        return;
-    }
-    
-    // التحقق من رمز المرور الحالي
-    if (currentPassword !== adminPassword) {
-        showAlert('رمز المرور الحالي غير صحيح!', 'error');
-        document.getElementById('currentPassword').value = '';
-        return;
-    }
-    
-    // التحقق من طول رمز المرور الجديد
-    if (newPassword.length < 4) {
-        showAlert('رمز المرور الجديد يجب أن يكون 4 أحرف على الأقل', 'error');
-        return;
-    }
-    
-    // التحقق من تطابق رمز المرور الجديد
-    if (newPassword !== confirmPassword) {
-        showAlert('رمز المرور الجديد غير متطابق!', 'error');
-        document.getElementById('confirmPassword').value = '';
-        return;
-    }
-    
-    // التحقق من أن رمز المرور الجديد مختلف عن القديم
-    if (newPassword === currentPassword) {
-        showAlert('رمز المرور الجديد يجب أن يكون مختلفاً عن القديم', 'error');
-        return;
-    }
-    
-    // حفظ رمز المرور الجديد
-    adminPassword = newPassword;
-    localStorage.setItem('adminPassword', newPassword);
-    
-    // مسح الحقول
-    document.getElementById('currentPassword').value = '';
-    document.getElementById('newPassword').value = '';
-    document.getElementById('confirmPassword').value = '';
-    
-    showAlert('تم تغيير رمز المرور بنجاح! ✓', 'success');
-}
