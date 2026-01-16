@@ -16,6 +16,21 @@ window.onload = function() {
 
 // ========== إدارة التبويبات ==========
 function showTab(tabName, event) {
+    // الخروج من وضع المسؤول عند العودة للرئيسية
+    if (tabName === 'main') {
+        isAdminAuthenticated = false;
+        
+        // إخفاء تبويبات المسؤول
+        const settingsBtn = document.getElementById('settingsTabBtn');
+        const historyBtn = document.getElementById('historyTabBtn');
+        const statsBtn = document.getElementById('statsTabBtn');
+        
+        if (settingsBtn) settingsBtn.style.display = 'none';
+        if (historyBtn) historyBtn.style.display = 'none';
+        if (statsBtn) statsBtn.style.display = 'none';
+    }
+    
+    // التحقق من صلاحيات الوصول للتبويبات المحمية
     if ((tabName === 'settings' || tabName === 'history' || tabName === 'stats') && !isAdminAuthenticated) {
         openAdminLoginModal();
         return;
@@ -37,6 +52,7 @@ function showTab(tabName, event) {
         loadStats();
     }
 }
+
 
 // ========== اختيار الخدمة ==========
 function selectService(button) {
