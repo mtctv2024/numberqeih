@@ -608,31 +608,46 @@ function openProtectedTab(tabName) {
     
     const tabsContainer = document.querySelector('.tabs');
     
-    if (!document.querySelector(`[onclick*="showTab('settings'"]`)) {
+    // إضافة زر الإعدادات إذا لم يكن موجوداً
+    if (!document.getElementById('settingsTabBtn')) {
         const settingsBtn = document.createElement('button');
+        settingsBtn.id = 'settingsTabBtn';
         settingsBtn.className = 'tab-btn';
         settingsBtn.onclick = (e) => showTab('settings', e);
         settingsBtn.textContent = 'الإعدادات';
         tabsContainer.appendChild(settingsBtn);
     }
     
-    if (!document.querySelector(`[onclick*="showTab('history'"]`)) {
+    // إضافة زر السجل إذا لم يكن موجوداً
+    if (!document.getElementById('historyTabBtn')) {
         const historyBtn = document.createElement('button');
+        historyBtn.id = 'historyTabBtn';
         historyBtn.className = 'tab-btn';
         historyBtn.onclick = (e) => showTab('history', e);
         historyBtn.textContent = 'السجل';
         tabsContainer.appendChild(historyBtn);
     }
     
-    if (!document.querySelector(`[onclick*="showTab('stats'"]`)) {
+    // إضافة زر الإحصائيات إذا لم يكن موجوداً
+    if (!document.getElementById('statsTabBtn')) {
         const statsBtn = document.createElement('button');
+        statsBtn.id = 'statsTabBtn';
         statsBtn.className = 'tab-btn';
         statsBtn.onclick = (e) => showTab('stats', e);
         statsBtn.textContent = 'الإحصائيات';
         tabsContainer.appendChild(statsBtn);
     }
     
-    const targetButton = document.querySelector(`[onclick*="showTab('${tabName}'"]`);
+    // فتح التبويب المطلوب
+    let targetButton;
+    if (tabName === 'settings') {
+        targetButton = document.getElementById('settingsTabBtn');
+    } else if (tabName === 'history') {
+        targetButton = document.getElementById('historyTabBtn');
+    } else if (tabName === 'stats') {
+        targetButton = document.getElementById('statsTabBtn');
+    }
+    
     if (targetButton) {
         showTab(tabName, { target: targetButton });
     }
