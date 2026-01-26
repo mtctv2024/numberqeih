@@ -1,8 +1,13 @@
+// ========== المتغيرات العامة ==========
 let currentQueue = parseInt(localStorage.getItem('currentQueue')) || 1;
 let ticketHistory = JSON.parse(localStorage.getItem('ticketHistory')) || [];
 let adminPassword = localStorage.getItem('adminPassword') || '1234';
 let isAdminAuthenticated = false;
+let bluetoothDevice = null;
+let bluetoothCharacteristic = null;
+let deferredPrompt;
 
+// ========== التهيئة عند تحميل الصفحة ==========
 window.onload = function() {
     updateQueueDisplay();
     loadSettings();
@@ -12,6 +17,35 @@ window.onload = function() {
     setInterval(checkDailyReset, 60000);
 };
 
+// ========== تثبيت التطبيق كـ PWA ==========
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    document.getElementById('installPrompt').style.display = 'block';
+});
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('تم قبول التثبيت');
+            }
+            deferredPrompt = null;
+            document.getElementById('installPrompt').style.display = 'none';
+        });
+    }
+}
+
+function dismissInstall() {
+    document.getElementById('installPrompt').style.display = 'none';
+}
+
+window.addEventListener('appinstalled', () => {
+    document.getElementById('installPrompt').style.display = 'none';
+});
+
+// ========== إدارة التبويبات ==========
 function showTab(tabName, event) {
     if (tabName === 'main') {
         isAdminAuthenticated = false;
@@ -41,6 +75,7 @@ function showTab(tabName, event) {
     if (tabName === 'stats') loadStats();
 }
 
+// ========== اختيار الخدمة ==========
 function selectService(button) {
     const buttons = document.querySelectorAll('.service-btn');
     buttons.forEach(btn => btn.classList.remove('selected'));
@@ -52,6 +87,7 @@ function selectService(button) {
     showAlert('تم اختيار: ' + service, 'success');
 }
 
+// ========== توليد وطباعة التذكرة ==========
 function generateAndPrintTicket() {
     const customerName = document.getElementById('customerName').value.trim();
     const serviceType = document.getElementById('serviceType').value;
@@ -97,8 +133,9 @@ function generateAndPrintTicket() {
     showAlert('تم إنشاء التذكرة بنجاح!', 'success');
 }
 
+// ========== عرض نافذة الطباعة ==========
 function showPrintModal(ticket) {
-    const orgName = localStorage.getItem('orgName') || 'إسم المنشأة';
+    const orgName = localStorage.getItem('orgName') || 'أمانة منطقة الرياض - بلدية محافظة القويعية';
     const logoTicket = localStorage.getItem('logoTicket') || '';
     const footerMessage = localStorage.getItem('footerMessage') || '';
     
@@ -121,7 +158,44 @@ function showPrintModal(ticket) {
     document.getElementById('printModal').classList.add('active');
 }
 
-function printTicketAndClose() {
+// ========== الطباعة الرئيسية ==========
+async function printTicketAndClose() {
+    const ticket = {
+        queueNumber: document.getElementById('modalQueueNum').textContent,
+        customerName: document.getElementById('modalCustomer').textContent,
+        serviceType: document.getElementById('modalService').textContent,
+        date: document.getElementById('modalDate').textContent,
+        time: document.getElementById('modalTime').textContent
+    };
+    
+    const printerType = document.getElementById('printerType')?.value || 'browser';
+    let success = false;
+    
+    if (printerType === 'wifi') {
+        showAlert('جاري الطباعة عبر WiFi...', 'info');
+        success = await printViaWiFi(ticket);
+    } 
+    else if (printerType === 'bluetooth') {
+        showAlert('جاري الطباعة عبر البلوتوث...', 'info');
+        success = await printViaBluetooth(ticket);
+    } 
+    else {
+        printViaBrowser(ticket);
+        return;
+    }
+    
+    if (success) {
+        showAlert('تم الطباعة بنجاح! ✓', 'success');
+        setTimeout(() => {
+            closePrintModal();
+            showTab('main', { target: document.querySelector('.tab-btn') });
+            showAlert('جاهز لاستقبال مراجع جديد', 'success');
+        }, 3000);
+    }
+}
+
+// ========== الطباعة عبر المتصفح ==========
+function printViaBrowser(ticket) {
     const ticketContent = document.querySelector('#printModal .ticket-preview').innerHTML;
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     
@@ -133,49 +207,13 @@ function printTicketAndClose() {
             <title>طباعة التذكرة</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body {
-                    font-family: 'Bahij', 'Noto Sans Arabic', 'Segoe UI', sans-serif;
-                    padding: 20px;
-                    direction: rtl;
-                    text-align: center;
-                }
-                .ticket-preview {
-                    max-width: 380px;
-                    margin: 0 auto;
-                    font-family: 'Courier New', monospace;
-                    font-size: 12px;
-                    line-height: 1.6;
-                }
-                .ticket-header {
-                    border-bottom: 2px dashed #ddd;
-                    padding-bottom: 10px;
-                    margin-bottom: 10px;
-                }
-                .ticket-logo {
-                    width: 60px;
-                    height: 60px;
-                    border-radius: 4px;
-                    object-fit: cover;
-                    margin: 0 auto 10px;
-                    display: block;
-                }
-                .ticket-number {
-                    font-size: 24px;
-                    font-weight: bold;
-                    color: #016948;
-                    margin: 15px 0;
-                }
-                .ticket-footer {
-                    border-top: 2px dashed #ddd;
-                    padding-top: 10px;
-                    margin-top: 10px;
-                    font-size: 10px;
-                    color: #666;
-                }
-                @media print {
-                    body { padding: 0; }
-                    @page { margin: 10mm; }
-                }
+                body { font-family: 'Bahij', 'Noto Sans Arabic', sans-serif; padding: 20px; direction: rtl; text-align: center; }
+                .ticket-preview { max-width: 380px; margin: 0 auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.6; }
+                .ticket-header { border-bottom: 2px dashed #ddd; padding-bottom: 10px; margin-bottom: 10px; }
+                .ticket-logo { width: 60px; height: 60px; border-radius: 4px; object-fit: cover; margin: 0 auto 10px; display: block; }
+                .ticket-number { font-size: 24px; font-weight: bold; color: #016948; margin: 15px 0; }
+                .ticket-footer { border-top: 2px dashed #ddd; padding-top: 10px; margin-top: 10px; font-size: 10px; color: #666; }
+                @media print { body { padding: 0; } @page { margin: 10mm; } }
             </style>
         </head>
         <body>
@@ -194,22 +232,25 @@ function printTicketAndClose() {
     closePrintModal();
 }
 
+// ========== إغلاق نافذة الطباعة ==========
 function closePrintModal() {
     document.getElementById('printModal').classList.remove('active');
 }
 
+// ========== تحديث عرض رقم الانتظار ==========
 function updateQueueDisplay() {
     const queueNum = String(currentQueue).padStart(3, '0');
     document.getElementById('currentQueue').textContent = queueNum;
 }
 
+// ========== تحديث الطابع الزمني ==========
 function updateTimestamp() {
     const now = new Date();
     const dateStr = now.toLocaleDateString('ar-SA');
     const timeStr = now.toLocaleTimeString('ar-SA');
     document.getElementById('timestamp').textContent = `${dateStr} | ${timeStr}`;
 }
-
+// ========== معاينة الشعارات ==========
 function previewLogoHeader(event) {
     const file = event.target.files[0];
     if (file) {
@@ -236,6 +277,7 @@ function previewLogoTicket(event) {
     }
 }
 
+// ========== حفظ الإعدادات ==========
 function saveSettings() {
     const orgName = document.getElementById('orgName').value.trim();
     const footerMessage = document.getElementById('footerMessage').value.trim();
@@ -243,7 +285,7 @@ function saveSettings() {
     const logoTicket = document.getElementById('logoPreviewTicket').src;
     const resetTime = document.getElementById('resetTime').value;
     const paperWidth = document.getElementById('paperWidth').value;
-    const printerSelect = document.getElementById('printerSelect').value;
+    const printerType = document.getElementById('printerType').value;
     
     if (orgName) localStorage.setItem('orgName', orgName);
     if (footerMessage) localStorage.setItem('footerMessage', footerMessage);
@@ -251,12 +293,13 @@ function saveSettings() {
     if (logoTicket && logoTicket !== window.location.href) localStorage.setItem('logoTicket', logoTicket);
     if (resetTime) localStorage.setItem('resetTime', resetTime);
     if (paperWidth) localStorage.setItem('paperWidth', paperWidth);
-    if (printerSelect) localStorage.setItem('printerSelect', printerSelect);
+    if (printerType) localStorage.setItem('printerType', printerType);
     
     showAlert('تم حفظ الإعدادات بنجاح!', 'success');
     loadSettings();
 }
 
+// ========== تحميل الإعدادات ==========
 function loadSettings() {
     const orgName = localStorage.getItem('orgName');
     const footerMessage = localStorage.getItem('footerMessage');
@@ -264,13 +307,13 @@ function loadSettings() {
     const logoTicket = localStorage.getItem('logoTicket');
     const resetTime = localStorage.getItem('resetTime');
     const paperWidth = localStorage.getItem('paperWidth');
-    const printerSelect = localStorage.getItem('printerSelect');
+    const printerType = localStorage.getItem('printerType');
     
     if (orgName) document.getElementById('orgName').value = orgName;
     if (footerMessage) document.getElementById('footerMessage').value = footerMessage;
     if (resetTime) document.getElementById('resetTime').value = resetTime;
     if (paperWidth) document.getElementById('paperWidth').value = paperWidth;
-    if (printerSelect) document.getElementById('printerSelect').value = printerSelect;
+    if (printerType) document.getElementById('printerType').value = printerType;
     
     if (logoHeader) {
         document.getElementById('headerLogo').src = logoHeader;
@@ -283,8 +326,41 @@ function loadSettings() {
         document.getElementById('logoPreviewTicket').src = logoTicket;
         document.getElementById('logoPreviewTicket').style.display = 'block';
     }
+    
+    // تحميل حالة الطابعات
+    const bluetoothConnected = localStorage.getItem('bluetoothPrinterConnected') === 'true';
+    const bluetoothName = localStorage.getItem('bluetoothPrinterName');
+    const printerStatus = document.getElementById('printerStatus');
+    if (printerStatus) {
+        if (bluetoothConnected && bluetoothName) {
+            printerStatus.innerHTML = `✅ آخر اتصال: <strong>${bluetoothName}</strong>`;
+        } else {
+            printerStatus.innerHTML = '❌ غير متصل';
+        }
+    }
+    
+    const wifiIP = localStorage.getItem('wifiPrinterIP');
+    const wifiPort = localStorage.getItem('wifiPrinterPort');
+    const wifiConnected = localStorage.getItem('wifiPrinterConnected') === 'true';
+    
+    if (document.getElementById('printerIP') && wifiIP) {
+        document.getElementById('printerIP').value = wifiIP;
+    }
+    if (document.getElementById('printerPort') && wifiPort) {
+        document.getElementById('printerPort').value = wifiPort;
+    }
+    
+    const wifiStatus = document.getElementById('wifiPrinterStatus');
+    if (wifiStatus) {
+        if (wifiConnected && wifiIP) {
+            wifiStatus.innerHTML = `✅ آخر اتصال: <strong>${wifiIP}:${wifiPort}</strong>`;
+        } else {
+            wifiStatus.innerHTML = '❌ غير متصل';
+        }
+    }
 }
 
+// ========== اختبار الطباعة ==========
 function testPrint() {
     const testTicket = {
         queueNumber: '000',
@@ -297,6 +373,7 @@ function testPrint() {
     showAlert('تم فتح نافذة الطباعة التجريبية', 'info');
 }
 
+// ========== إعادة تعيين العداد ==========
 function resetCounter() {
     if (confirm('هل أنت متأكد من إعادة تعيين العداد إلى 1؟')) {
         currentQueue = 1;
@@ -312,6 +389,7 @@ function resetCounterNow() {
     }
 }
 
+// ========== التحقق من التصفير اليومي ==========
 function checkDailyReset() {
     const resetTime = localStorage.getItem('resetTime') || '05:00';
     const now = new Date();
@@ -327,6 +405,7 @@ function checkDailyReset() {
     }
 }
 
+// ========== حذف السجل ==========
 function clearHistory() {
     if (confirm('هل أنت متأكد من حذف جميع السجلات؟ لا يمكن التراجع عن هذا الإجراء!')) {
         ticketHistory = [];
@@ -336,8 +415,9 @@ function clearHistory() {
     }
 }
 
+// ========== إعادة تعيين كامل ==========
 function resetAll() {
-    if (confirm('هل أنت متأكد من إعادة تعيين جميع البيانات والإعدادات؟ لا يمكن التراجع عن هذا الإجراء!')) {
+    if (confirm('هل أنت متأكد من إعادة تعيين جميع البيانات والإعدادات؟')) {
         if (confirm('تحذير أخير: سيتم حذف كل شيء!')) {
             localStorage.clear();
             currentQueue = 1;
@@ -349,6 +429,7 @@ function resetAll() {
     }
 }
 
+// ========== تحميل السجل ==========
 function loadHistory() {
     const tbody = document.getElementById('historyBody');
     tbody.innerHTML = '';
@@ -372,6 +453,7 @@ function loadHistory() {
     });
 }
 
+// ========== فلترة السجل ==========
 function filterHistory() {
     const searchValue = document.getElementById('searchHistory').value.toLowerCase();
     const tbody = document.getElementById('historyBody');
@@ -383,6 +465,7 @@ function filterHistory() {
     }
 }
 
+// ========== تحميل الإحصائيات ==========
 function loadStats() {
     const now = new Date();
     const today = now.toDateString();
@@ -402,6 +485,7 @@ function loadStats() {
     loadHourlyChart();
 }
 
+// ========== رسم بياني للخدمات ==========
 function loadServicesChart() {
     const serviceCount = {};
     ticketHistory.forEach(ticket => {
@@ -434,6 +518,7 @@ function loadServicesChart() {
     chartDiv.innerHTML = html;
 }
 
+// ========== رسم بياني للساعات ==========
 function loadHourlyChart() {
     const hourCount = {};
     for (let i = 0; i < 24; i++) hourCount[i] = 0;
@@ -465,6 +550,7 @@ function loadHourlyChart() {
     chartDiv.innerHTML = html;
 }
 
+// ========== تصدير CSV ==========
 function exportToCSV() {
     if (ticketHistory.length === 0) {
         showAlert('لا توجد بيانات للتصدير', 'error');
@@ -486,6 +572,7 @@ function exportToCSV() {
     showAlert('تم تحميل ملف CSV بنجاح!', 'success');
 }
 
+// ========== تصدير JSON ==========
 function exportToJSON() {
     if (ticketHistory.length === 0) {
         showAlert('لا توجد بيانات للتصدير', 'error');
@@ -504,6 +591,7 @@ function exportToJSON() {
     showAlert('تم تحميل ملف JSON بنجاح!', 'success');
 }
 
+// ========== عرض التنبيهات ==========
 function showAlert(message, type) {
     const alertContainer = document.getElementById('alertContainer');
     const alert = document.createElement('div');
@@ -516,6 +604,7 @@ function showAlert(message, type) {
     }, 3000);
 }
 
+// ========== إدارة دخول المسؤول ==========
 function openAdminLoginModal() {
     document.getElementById('adminLoginModal').classList.add('active');
     document.getElementById('adminPasswordInput').value = '';
@@ -585,6 +674,7 @@ function openProtectedTab(tabName) {
     if (targetButton) showTab(tabName, { target: targetButton });
 }
 
+// ========== تغيير رمز المرور ==========
 function changeAdminPassword() {
     const currentPassword = document.getElementById('currentPassword').value;
     const newPassword = document.getElementById('newPassword').value;
@@ -621,6 +711,184 @@ function changeAdminPassword() {
     showAlert('تم تغيير رمز المرور بنجاح! ✓', 'success');
 }
 
+// ========== الاتصال بطابعة بلوتوث ==========
+async function connectBluetoothPrinter() {
+    try {
+        if (!navigator.bluetooth) {
+            showAlert('متصفحك لا يدعم Web Bluetooth', 'error');
+            return;
+        }
+        
+        showAlert('جاري البحث عن الطابعات...', 'info');
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
+        });
+        
+        document.getElementById('printerStatus').innerHTML = `✅ تم العثور على: <strong>${bluetoothDevice.name}</strong>`;
+        showAlert('جاري الاتصال...', 'info');
+        
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+        bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        
+        localStorage.setItem('bluetoothPrinterName', bluetoothDevice.name);
+        localStorage.setItem('bluetoothPrinterConnected', 'true');
+        
+        document.getElementById('printerStatus').innerHTML = `✅ متصل بـ: <strong>${bluetoothDevice.name}</strong>`;
+        showAlert('تم الاتصال بالطابعة بنجاح! ✓', 'success');
+        
+    } catch(error) {
+        console.error('Bluetooth Error:', error);
+        showAlert('فشل الاتصال بالطابعة', 'error');
+        document.getElementById('printerStatus').innerHTML = '❌ غير متصل';
+        localStorage.setItem('bluetoothPrinterConnected', 'false');
+    }
+}
+
+// ========== الطباعة عبر البلوتوث ==========
+async function printViaBluetooth(ticket) {
+    try {
+        if (!bluetoothDevice || !bluetoothCharacteristic) {
+            showAlert('الرجاء الاتصال بالطابعة أولاً', 'error');
+            return false;
+        }
+        
+        if (!bluetoothDevice.gatt.connected) {
+            showAlert('جاري إعادة الاتصال...', 'info');
+            const server = await bluetoothDevice.gatt.connect();
+            const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+            bluetoothCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+        }
+        
+        const commands = buildESCPOSCommands(ticket);
+        await bluetoothCharacteristic.writeValue(commands);
+        return true;
+        
+    } catch(error) {
+        console.error('Print Error:', error);
+        showAlert('فشلت الطباعة: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// ========== بناء أوامر ESC/POS ==========
+function buildESCPOSCommands(ticket) {
+    const encoder = new TextEncoder();
+    const ESC = 0x1B;
+    const GS = 0x1D;
+    let commands = [];
+    
+    commands.push(ESC, 0x40);
+    commands.push(ESC, 0x61, 0x01);
+    commands.push(ESC, 0x21, 0x30);
+    const orgName = localStorage.getItem('orgName') || 'أمانة منطقة الرياض';
+    commands.push(...encoder.encode(orgName + '\n\n'));
+    commands.push(ESC, 0x21, 0x00);
+    commands.push(...encoder.encode('رقم الانتظار\n'));
+    commands.push(ESC, 0x21, 0x38);
+    commands.push(...encoder.encode(ticket.queueNumber + '\n\n'));
+    commands.push(...encoder.encode('--------------------------------\n'));
+    commands.push(ESC, 0x21, 0x00);
+    commands.push(ESC, 0x61, 0x02);
+    commands.push(...encoder.encode('رقم الهوية: ' + ticket.customerName + '\n'));
+    commands.push(...encoder.encode('الخدمة: ' + ticket.serviceType + '\n'));
+    commands.push(...encoder.encode('التاريخ: ' + ticket.date + '\n'));
+    commands.push(...encoder.encode('الوقت: ' + ticket.time + '\n'));
+    commands.push(...encoder.encode('--------------------------------\n'));
+    commands.push(ESC, 0x61, 0x01);
+    const footerMsg = localStorage.getItem('footerMessage') || 'جميع الحقوق محفوظة';
+    commands.push(...encoder.encode(footerMsg + '\n\n\n'));
+    commands.push(GS, 0x56, 0x00);
+    
+    return new Uint8Array(commands);
+}
+
+// ========== اختبار طابعة WiFi ==========
+async function testWiFiPrinter() {
+    const ip = document.getElementById('printerIP').value.trim();
+    const port = document.getElementById('printerPort').value || 9100;
+    
+    if (!ip) {
+        showAlert('الرجاء إدخال IP الطابعة', 'error');
+        return;
+    }
+    
+    showAlert('جاري اختبار الاتصال...', 'info');
+    
+    try {
+        const response = await fetch('http://localhost:3000/test-connection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip, port: parseInt(port) })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            localStorage.setItem('wifiPrinterIP', ip);
+            localStorage.setItem('wifiPrinterPort', port);
+            localStorage.setItem('wifiPrinterConnected', 'true');
+            document.getElementById('wifiPrinterStatus').innerHTML = `✅ متصل: <strong>${ip}:${port}</strong>`;
+            showAlert('الطابعة متصلة! ✓', 'success');
+        } else {
+            throw new Error(result.message);
+        }
+        
+    } catch(error) {
+        console.error('خطأ:', error);
+        document.getElementById('wifiPrinterStatus').innerHTML = '❌ فشل الاتصال';
+        localStorage.setItem('wifiPrinterConnected', 'false');
+        if (error.message.includes('Failed to fetch')) {
+            showAlert('تأكد من تشغيل خادم الطباعة المحلي', 'error');
+        } else {
+            showAlert('فشل الاتصال: ' + error.message, 'error');
+        }
+    }
+}
+
+// ========== الطباعة عبر WiFi ==========
+async function printViaWiFi(ticket) {
+    const ip = localStorage.getItem('wifiPrinterIP');
+    const port = parseInt(localStorage.getItem('wifiPrinterPort')) || 9100;
+    
+    if (!ip) {
+        showAlert('لم يتم تكوين طابعة WiFi', 'error');
+        return false;
+    }
+    
+    try {
+        const commands = buildESCPOSCommands(ticket);
+        const commandsArray = Array.from(commands);
+        
+        const response = await fetch('http://localhost:3000/print', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip, port, data: commandsArray })
+        });
+        
+        const
+        const response = await fetch('http://localhost:3000/print', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip, port, data: commandsArray })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            return true;
+        } else {
+            throw new Error(result.message);
+        }
+        
+    } catch(error) {
+        console.error('خطأ في الطباعة:', error);
+        showAlert('فشلت الطباعة: ' + error.message, 'error');
+        return false;
+    }
+}
+
+// ========== دعم Enter في النماذج ==========
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('adminPasswordInput')?.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') submitAdminPassword();

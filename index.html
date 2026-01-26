@@ -3,10 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TW NUMBER</title>
+    <meta name="theme-color" content="#016948">
+    <meta name="description" content="نظام إدارة الطوابير والطباعة - أمانة منطقة الرياض">
+    <title>أمانة منطقة الرياض</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div id="installPrompt" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #016948; color: white; padding: 15px 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        <p style="margin-bottom: 10px; font-weight: 600;">📱 ثبّت التطبيق للعمل بدون إنترنت</p>
+        <button onclick="installApp()" style="background: white; color: #016948; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: 600; margin-left: 10px;">تثبيت</button>
+        <button onclick="dismissInstall()" style="background: transparent; color: white; border: 1px solid white; padding: 8px 20px; border-radius: 5px; cursor: pointer;">لاحقاً</button>
+    </div>
+
     <div class="container">
         <div class="header">
             <button class="settings-icon" onclick="openAdminLoginModal()">⚙️</button>
@@ -99,11 +111,31 @@
                 </div>
                 <button class="btn btn-primary" onclick="changeAdminPassword()">🔒 تغيير رمز المرور</button>
                 <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-                    <small style="color: #856404;"><strong>تنبيه:</strong> احتفظ برمز المرور في مكان آمن. إذا فقدته، ستحتاج لإعادة تعيين البيانات.</small>
+                    <small style="color: #856404;"><strong>تنبيه:</strong> احتفظ برمز المرور في مكان آمن.</small>
                 </div>
             </div>
             <div class="card">
                 <h2>🖨️ إعدادات الطباعة</h2>
+                <div class="form-group">
+                    <label>📡 الطابعة البلوتوث</label>
+                    <button class="btn btn-secondary" onclick="connectBluetoothPrinter()">الاتصال بطابعة بلوتوث</button>
+                    <div id="printerStatus" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
+                </div>
+                <div class="form-group">
+                    <label>📶 طابعة WiFi الشبكية</label>
+                    <input type="text" id="printerIP" placeholder="مثال: 192.168.1.100" style="margin-bottom: 10px;">
+                    <input type="number" id="printerPort" placeholder="المنفذ (Port)" value="9100" style="margin-bottom: 10px;">
+                    <button class="btn btn-secondary" onclick="testWiFiPrinter()">اختبار الاتصال</button>
+                    <div id="wifiPrinterStatus" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
+                </div>
+                <div class="form-group">
+                    <label>نوع الطباعة المفضل</label>
+                    <select id="printerType">
+                        <option value="browser">متصفح (عادي)</option>
+                        <option value="bluetooth">بلوتوث</option>
+                        <option value="wifi">WiFi شبكة</option>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>وقت التصفير اليومي</label>
                     <div class="inline-group">
@@ -119,15 +151,6 @@
                         <option value="4">4 بوصة</option>
                         <option value="58">58 مم (حرارية)</option>
                         <option value="80">80 مم (حرارية عريضة)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>الطابعة الافتراضية</label>
-                    <select id="printerSelect">
-                        <option value="">-- اختر الطابعة الافتراضية --</option>
-                        <option value="thermal_58">طابعة حرارية 58مم</option>
-                        <option value="thermal_80">طابعة حرارية 80مم</option>
-                        <option value="network_printer">طابعة شبكة</option>
                     </select>
                 </div>
                 <button class="btn btn-secondary" onclick="testPrint()">🧪 اختبار الطباعة</button>
@@ -192,11 +215,11 @@
     <footer class="footer">
         <img src="vision2030.png" alt="رؤية 2030" class="vision-logo">
         <div class="footer-content">
-           
+            <p>© 2026 أمانة منطقة الرياض - بلدية محافظة القويعية</p>
             <p>جميع الحقوق محفوظة</p>
         </div>
     </footer>
-        <div id="printModal" class="modal">
+    <div id="printModal" class="modal">
         <div style="position: relative; width: auto;">
             <button class="close-btn" onclick="closePrintModal()">×</button>
             <div class="ticket-preview">
@@ -258,6 +281,15 @@
             </div>
         </div>
     </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => console.log('Service Worker مسجل'))
+                    .catch(error => console.log('فشل تسجيل Service Worker:', error));
+            });
+        }
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
