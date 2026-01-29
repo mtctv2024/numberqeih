@@ -3,293 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#016948">
-    <meta name="description" content="نظام إدارة الطوابير والطباعة - أمانة منطقة الرياض">
-    <title>أمانة منطقة الرياض</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="styles.css">
+    <title>تطبيق وَسْم</title>
+    
+    <!-- المسار الصحيح والمحلي للأيقونات -->
+    <link rel="stylesheet" href="fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div id="installPrompt" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #016948; color: white; padding: 15px 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-        <p style="margin-bottom: 10px; font-weight: 600;">📱 ثبّت التطبيق للعمل بدون إنترنت</p>
-        <button onclick="installApp()" style="background: white; color: #016948; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: 600; margin-left: 10px;">تثبيت</button>
-        <button onclick="dismissInstall()" style="background: transparent; color: white; border: 1px solid white; padding: 8px 20px; border-radius: 5px; cursor: pointer;">لاحقاً</button>
+    <div id="splash-screen"></div>
+    
+    <div class="header" style="display: none;">هذا التطبيق أحد مبادرات جمعية ركاز الشبابية بمحافظة القويعية</div>
+    
+    <div class="main-container" style="display: none;">
+        <!-- الجزء الأيسر: لوحة التحكم -->
+        <div class="left-panel">
+            <div class="tab-panel">
+                <button class="tab-link active" onclick="openTab(event, 'TabImages')"><i class="fas fa-images"></i><span>الصور</span></button>
+                <button class="tab-link" onclick="openTab(event, 'TabLogo')"><i class="fas fa-star"></i><span>الشعار</span></button>
+                <button class="tab-link" onclick="openTab(event, 'TabTemplate')"><i class="fas fa-clone"></i><span>القالب</span></button>
+                <button class="tab-link" onclick="openTab(event, 'TabProcess')"><i class="fas fa-cogs"></i><span>الدمج</span></button>
+            </div>
+
+            <!-- تبويب الصور -->
+            <div id="TabImages" class="tab-content" style="display: block;">
+                <h3><i class="fas fa-images"></i> 1. اختيار الصور</h3>
+                <button class="btn" onclick="document.getElementById('imageInput').click()"><i class="fas fa-file-import"></i> اختيار صور متعددة</button>
+                <button class="btn accent-btn" id="btn-take-picture"><i class="fas fa-camera"></i> إلتقاط صورة</button>
+                <input type="file" id="imageInput" accept="image/jpeg, image/png, image/jpg" multiple hidden>
+                <p id="imageCountLabel">0 صورة</p>
+                <hr>
+                <h4><i class="fas fa-ruler-combined"></i> خيارات حجم الصورة</h4>
+                <div class="radio-group">
+                    <label><input type="radio" name="imageSizeMode" value="fit_to_template" checked onchange="updateLivePreview()"> مطابقة مقاس الصورة للقالب</label>
+                    <label><input type="radio" name="imageSizeMode" value="keep_original" onchange="updateLivePreview()"> إبقاء مقاس الصورة الأصلي</label>
+                </div>
+            </div>
+
+            <!-- تبويب الشعار -->
+            <div id="TabLogo" class="tab-content">
+                <h3><i class="fas fa-star"></i> 2. إعدادات الشعار</h3>
+                <button class="btn" onclick="document.getElementById('logoInput').click()"><i class="fas fa-upload"></i> اختيار الشعار (PNG)</button>
+                <input type="file" id="logoInput" accept="image/png" hidden>
+                <p id="logoStatusLabel">لا يوجد شعار</p>
+                <div class="control-group">
+                    <label for="logoSize"><i class="fas fa-expand-arrows-alt"></i> حجم الشعار: <span id="logoSizeValue">15</span>%</label>
+                    <input type="range" id="logoSize" min="5" max="50" value="15" class="slider">
+                </div>
+                <div class="control-group">
+                    <label for="logoOpacity"><i class="fas fa-eye"></i> شفافية الشعار: <span id="logoOpacityValue">100</span>%</label>
+                    <input type="range" id="logoOpacity" min="10" max="100" value="100" class="slider">
+                </div>
+                <div class="control-group">
+                    <label for="logoPosition"><i class="fas fa-map-marker-alt"></i> موضع الشعار:</label>
+                    <select id="logoPosition">
+                        <option value="Bottom-Right">أسفل اليمين</option>
+                        <option value="Bottom-Left">أسفل اليسار</option>
+                        <option value="Top-Right">أعلى اليمين</option>
+                        <option value="Top-Left">أعلى اليسار</option>
+                        <option value="Center">المنتصف</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- تبويب القالب -->
+            <div id="TabTemplate" class="tab-content">
+                <h3><i class="fas fa-clone"></i> 3. إعدادات القالب</h3>
+                <button class="btn" onclick="document.getElementById('templateInput').click()"><i class="fas fa-upload"></i> اختيار القالب</button>
+                <input type="file" id="templateInput" accept="image/jpeg, image/png, image/jpg" hidden>
+                <p id="templateStatusLabel">لا يوجد قالب</p>
+                <div class="control-group">
+                    <label for="templateOpacity"><i class="fas fa-eye"></i> شفافية القالب: <span id="templateOpacityValue">100</span>%</label>
+                    <input type="range" id="templateOpacity" min="10" max="100" value="100" class="slider">
+                </div>
+            </div>
+
+             <!-- تبويب الدمج -->
+             <div id="TabProcess" class="tab-content">
+                <h3><i class="fas fa-cogs"></i> 4. بدء الدمج</h3>
+                <button class="btn process-btn" id="processButton"><i class="fas fa-play"></i> بدء معالجة الصور</button>
+                <progress id="progressBar" value="0" max="100"></progress>
+                <p id="progressLabel">0%</p>
+                <button class="btn reset-btn" id="resetButton"><i class="fas fa-trash-alt"></i> إعادة ضبط الكل</button>
+            </div>
+        </div>
+
+        <!-- الجزء الأيمن: المعاينة -->
+        <div class="right-panel">
+            <div id="previewArea" class="preview-area">
+                <canvas id="previewCanvas"></canvas>
+                <span id="previewPlaceholder"><i class="fas fa-photo-video"></i><br>منطقة المعاينة</span>
+            </div>
+        </div>
     </div>
 
-    <div class="container">
-        <div class="header">
-            <button class="settings-icon" onclick="openAdminLoginModal()">⚙️</button>
-            <div class="header-logo-wrapper">
-                <img id="headerLogo" class="header-logo" src="" alt="" style="display:none;">
-            </div>
-        </div>
-        <div id="alertContainer"></div>
-        <div class="tabs">
-            <button class="tab-btn active" onclick="showTab('main', event)">الرئيسية</button>
-        </div>
-        <div id="main" class="tab-content active">
-            <div class="card">
-                <h2>نأمل تعبئة البيانات وطباعة رقم الانتظار</h2>
-                <div class="form-group">
-                    <label>رقم الهوية *</label>
-                    <input type="text" id="customerName" placeholder="أدخل رقم الهوية" autocomplete="off" required>
-                </div>
-                <div class="form-group">
-                    <label>نوع الخدمة *</label>
-                    <div class="services-grid" id="servicesContainer">
-                        <button type="button" class="service-btn" data-service="مقابلة رئيس البلدية" onclick="selectService(this)">مقابلة رئيس البلدية</button>
-                        <button type="button" class="service-btn" data-service="الاستثمارات" onclick="selectService(this)">الاستثمارات</button>
-                        <button type="button" class="service-btn" data-service="صحة البيئة" onclick="selectService(this)">صحة البيئة</button>
-                        <button type="button" class="service-btn" data-service="الأراضي" onclick="selectService(this)">الأراضي</button>
-                        <button type="button" class="service-btn" data-service="الشؤون الفنية" onclick="selectService(this)">الشؤون الفنية</button>
-                        <button type="button" class="service-btn" data-service="المشتريات" onclick="selectService(this)">المشتريات</button>
-                        <button type="button" class="service-btn" data-service="المشاريع" onclick="selectService(this)">المشاريع</button>
-                        <button type="button" class="service-btn" data-service="الخدمات العامة" onclick="selectService(this)">الخدمات العامة</button>
-                    </div>
-                    <input type="hidden" id="serviceType" required>
-                    <div id="selectedServiceDisplay" class="selected-service-box" style="display:none;">تم اختيار: <span id="selectedServiceText"></span></div>
-                </div>
-                <button class="btn btn-primary" onclick="generateAndPrintTicket()">🖨️ طباعة</button>
-            </div>
-        </div>
-        <div class="queue-number" id="queueDisplay">
-            <h3>رقم الانتظار الحالي</h3>
-            <div class="number" id="currentQueue">001</div>
-            <div class="timestamp" id="timestamp"></div>
-        </div>
-        <div id="settings" class="tab-content">
-            <div class="card">
-                <h2>⚙️ إعدادات المنشأة</h2>
-                <div class="form-group">
-                    <label>اسم المنشأة *</label>
-                    <input type="text" id="orgName" placeholder="أدخل اسم المنشأة" required>
-                </div>
-                <div class="form-group">
-                    <label>رسالة التذييل</label>
-                    <textarea id="footerMessage" placeholder="رسالة اختيارية تظهر في التذكرة"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>شعار الهيدر (يظهر في أعلى الصفحة)</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="logoFileHeader" accept="image/*" onchange="previewLogoHeader(event)">
-                        <label for="logoFileHeader" class="file-input-label">انقر لرفع شعار الهيدر</label>
-                        <div class="file-name" id="logoFileNameHeader"></div>
-                        <div style="margin-top: 15px; text-align: center;">
-                            <img id="logoPreviewHeader" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>شعار التذكرة (يظهر في أعلى التذكرة)</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="logoFileTicket" accept="image/*" onchange="previewLogoTicket(event)">
-                        <label for="logoFileTicket" class="file-input-label">انقر لرفع شعار التذكرة</label>
-                        <div class="file-name" id="logoFileNameTicket"></div>
-                        <div style="margin-top: 15px; text-align: center;">
-                            <img id="logoPreviewTicket" src="" style="max-width: 200px; max-height: 200px; border-radius: 8px; display: none;">
-                        </div>
-                    </div>
-                </div>
-                <button class="btn btn-success" onclick="saveSettings()">💾 حفظ الإعدادات</button>
-            </div>
-            <div class="card">
-                <h2>🔐 تغيير رمز مرور المسؤول</h2>
-                <div class="form-group">
-                    <label>رمز المرور الحالي</label>
-                    <input type="password" id="currentPassword" placeholder="أدخل رمز المرور الحالي">
-                </div>
-                <div class="form-group">
-                    <label>رمز المرور الجديد</label>
-                    <input type="password" id="newPassword" placeholder="أدخل رمز المرور الجديد">
-                </div>
-                <div class="form-group">
-                    <label>تأكيد رمز المرور الجديد</label>
-                    <input type="password" id="confirmPassword" placeholder="أعد إدخال رمز المرور الجديد">
-                </div>
-                <button class="btn btn-primary" onclick="changeAdminPassword()">🔒 تغيير رمز المرور</button>
-                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-                    <small style="color: #856404;"><strong>تنبيه:</strong> احتفظ برمز المرور في مكان آمن.</small>
-                </div>
-            </div>
-            <div class="card">
-                <h2>🖨️ إعدادات الطباعة</h2>
-                <div class="form-group">
-                    <label>📡 الطابعة البلوتوث</label>
-                    <button class="btn btn-secondary" onclick="connectBluetoothPrinter()">الاتصال بطابعة بلوتوث</button>
-                    <div id="printerStatus" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
-                </div>
-                <div class="form-group">
-                    <label>📶 طابعة WiFi الشبكية</label>
-                    <input type="text" id="printerIP" placeholder="مثال: 192.168.1.100" style="margin-bottom: 10px;">
-                    <input type="number" id="printerPort" placeholder="المنفذ (Port)" value="9100" style="margin-bottom: 10px;">
-                    <button class="btn btn-secondary" onclick="testWiFiPrinter()">اختبار الاتصال</button>
-                    <div id="wifiPrinterStatus" style="margin-top: 10px; font-size: 13px; color: #666;"></div>
-                </div>
-                <div class="form-group">
-                    <label>نوع الطباعة المفضل</label>
-                    <select id="printerType">
-                        <option value="browser">متصفح (عادي)</option>
-                        <option value="bluetooth">بلوتوث</option>
-                        <option value="wifi">WiFi شبكة</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>وقت التصفير اليومي</label>
-                    <div class="inline-group">
-                        <input type="time" id="resetTime" value="05:00">
-                        <button type="button" class="btn btn-danger btn-inline" onclick="resetCounterNow()">تصفير فوري</button>
-                    </div>
-                    <small style="color: #999; margin-top: 5px; display: block;">سيتم إعادة تعيين عداد الطوابير يومياً في هذا الوقت</small>
-                </div>
-                <div class="form-group">
-                    <label>عرض الورقة (بوصة)</label>
-                    <select id="paperWidth">
-                        <option value="3">3 بوصة (حرارية قياسية)</option>
-                        <option value="4">4 بوصة</option>
-                        <option value="58">58 مم (حرارية)</option>
-                        <option value="80">80 مم (حرارية عريضة)</option>
-                    </select>
-                </div>
-                <button class="btn btn-secondary" onclick="testPrint()">🧪 اختبار الطباعة</button>
-                <button class="btn btn-danger" onclick="resetCounter()">🔄 إعادة تعيين العداد</button>
-            </div>
-            <div class="card">
-                <h2>🗑️ إدارة البيانات</h2>
-                <p style="color: #666; margin-bottom: 15px;"><strong>تنبيه:</strong> هذه الإجراءات لا يمكن التراجع عنها!</p>
-                <div class="btn-group">
-                    <button class="btn btn-danger" onclick="clearHistory()">حذف السجل</button>
-                    <button class="btn btn-danger" onclick="resetAll()">إعادة تعيين كامل</button>
-                </div>
-            </div>
-        </div>
-        <div id="history" class="tab-content">
-            <div class="card">
-                <h2>📜 سجل التذاكر</h2>
-                <div style="margin-bottom: 15px;">
-                    <input type="text" id="searchHistory" placeholder="🔍 ابحث عن رقم الهوية أو الخدمة..." onkeyup="filterHistory()" style="margin-bottom: 10px;">
-                </div>
-                <div class="table-responsive">
-                    <table class="historyTable">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>الرقم</th>
-                                <th>رقم الهوية</th>
-                                <th>الخدمة</th>
-                                <th>التاريخ والوقت</th>
-                                <th>الحالة</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyBody">
-                            <tr><td colspan="6" style="text-align:center; color: #999;">لا توجد بيانات</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="card">
-                <h2>📥 تحميل البيانات</h2>
-                <button class="btn btn-secondary" onclick="exportToCSV()">📊 تحميل CSV</button>
-                <button class="btn btn-secondary" onclick="exportToJSON()">📁 تحميل JSON</button>
-            </div>
-        </div>
-        <div id="stats" class="tab-content">
-            <div class="stats-grid">
-                <div class="stat-card blue"><h4>إجمالي التذاكر</h4><div class="value" id="totalTickets">0</div></div>
-                <div class="stat-card green"><h4>اليوم</h4><div class="value" id="todayTickets">0</div></div>
-                <div class="stat-card orange"><h4>الأسبوع</h4><div class="value" id="weekTickets">0</div></div>
-                <div class="stat-card purple"><h4>الشهر</h4><div class="value" id="monthTickets">0</div></div>
-            </div>
-            <div class="card">
-                <h2>📊 الخدمات الأكثر طلباً</h2>
-                <div id="servicesChart"><p style="text-align: center; color: #999;">لا توجد بيانات</p></div>
-            </div>
-            <div class="card">
-                <h2>⏰ توزيع الطلبات بالساعات</h2>
-                <div id="hourlyChart"><p style="text-align: center; color: #999;">لا توجد بيانات</p></div>
+    <!-- واجهة الكاميرا المنبثقة -->
+    <div id="camera-modal" class="modal-overlay">
+        <div class="modal-content camera-view">
+            <video id="camera-feed" autoplay playsinline></video>
+            <canvas id="capture-canvas" style="display:none;"></canvas>
+            <div class="modal-buttons">
+                <button id="btn-cancel-camera" class="btn reset-btn"><i class="fas fa-times"></i></button>
+                <button id="btn-switch-camera" class="btn accent-btn"><i class="fas fa-sync-alt"></i></button>
+                <button id="btn-capture-photo" class="btn process-btn"><i class="fas fa-camera"></i></button>
             </div>
         </div>
     </div>
-    <footer class="footer">
-        <img src="vision2030.png" alt="رؤية 2030" class="vision-logo">
-        <div class="footer-content">
-            <p>© 2026 أمانة منطقة الرياض - بلدية محافظة القويعية</p>
-            <p>جميع الحقوق محفوظة</p>
-        </div>
-    </footer>
-    <div id="printModal" class="modal">
-        <div style="position: relative; width: auto;">
-            <button class="close-btn" onclick="closePrintModal()">×</button>
-            <div class="ticket-preview">
-                <div class="ticket-header">
-                    <img id="modalLogo" class="ticket-logo" src="" alt="" style="display:none;">
-                    <div id="modalOrgName" style="font-weight: bold; font-size: 14px;"></div>
-                </div>
-                <div style="margin: 20px 0; padding: 20px 0; border-top: 2px dashed #ddd; border-bottom: 2px dashed #ddd;">
-                    <div style="font-size: 11px; color: #666; margin-bottom: 10px;">رقم الانتظار</div>
-                    <div class="ticket-number" id="modalQueueNum">001</div>
-                </div>
-                <div style="font-size: 11px; margin: 10px 0; line-height: 1.8;">
-                    <div><strong>رقم الهوية:</strong> <span id="modalCustomer"></span></div>
-                    <div><strong>الخدمة:</strong> <span id="modalService"></span></div>
-                    <div><strong>التاريخ:</strong> <span id="modalDate"></span></div>
-                    <div><strong>الوقت:</strong> <span id="modalTime"></span></div>
-                </div>
-                <div class="ticket-footer">
-                    <div id="modalFooter" style="margin-top: 10px;"></div>
-                    <div style="margin-top: 10px; color: #999;">جميع الحقوق محفوظة</div>
-                </div>
-            </div>
-            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;" class="modal-actions">
-                <button class="btn btn-primary" style="flex: 1;" onclick="printTicketAndClose()">🖨️ طباعة</button>
-                <button class="btn btn-secondary" style="flex: 1;" onclick="closePrintModal()">إغلاق</button>
+
+    <!-- واجهة ما بعد المعالجة المنبثقة -->
+    <div id="post-process-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2><i class="fas fa-check-circle"></i> اكتملت المعالجة</h2>
+            <p>تم تحميل الصور بنجاح. ماذا تريد أن تفعل الآن؟</p>
+            <div class="modal-buttons">
+                <button id="btn-keep-settings" class="btn"><i class="fas fa-save"></i> الاحتفاظ بالإعدادات الحالية</button>
+                <button id="btn-reset-after-process" class="btn reset-btn"><i class="fas fa-trash-alt"></i> إعادة ضبط التطبيق</button>
             </div>
         </div>
     </div>
-    <div id="adminLoginModal" class="modal">
-        <div class="modal-content" style="max-width:360px; position:relative;">
-            <button class="close-btn" onclick="closeAdminLoginModal()">×</button>
-            <div class="modal-header">
-                <h2>🔐 دخول المسؤول</h2>
-                <p style="font-size:13px; color:#666;">أدخل رمز المرور للوصول إلى الإعدادات المتقدمة</p>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>رمز المرور</label>
-                    <input type="password" id="adminPasswordInput" placeholder="أدخل رمز المرور">
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-primary" onclick="submitAdminPassword()">دخول</button>
-                <button class="btn btn-secondary" onclick="closeAdminLoginModal()">إلغاء</button>
-            </div>
-        </div>
-    </div>
-    <div id="adminMenuModal" class="modal">
-        <div class="modal-content" style="max-width:360px; position:relative;">
-            <button class="close-btn" onclick="closeAdminMenuModal()">×</button>
-            <div class="modal-header">
-                <h2>⚙️ قائمة المسؤول</h2>
-                <p style="font-size:13px; color:#666;">اختر القسم الذي تريد الدخول إليه</p>
-            </div>
-            <div class="modal-body">
-                <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="openProtectedTab('settings')">إعدادات النظام</button>
-                <button class="btn btn-primary" style="width:100%; margin-bottom:10px;" onclick="openProtectedTab('history')">سجل التذاكر</button>
-                <button class="btn btn-primary" style="width:100%;" onclick="openProtectedTab('stats')">الإحصائيات</button>
-            </div>
-        </div>
-    </div>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => console.log('Service Worker مسجل'))
-                    .catch(error => console.log('فشل تسجيل Service Worker:', error));
-            });
-        }
-    </script>
-    <script src="app.js"></script>
+
+    <script src="script.js"></script>
 </body>
 </html>
