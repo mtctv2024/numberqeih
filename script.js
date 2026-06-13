@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // --- splash screen ---
+  const splashEl = document.getElementById('splash-screen');
+  const mainEl = document.querySelector('.main-container');
+  if (splashEl) {
+    setTimeout(function() {
+      splashEl.style.opacity = '0';
+      setTimeout(function() {
+        splashEl.style.display = 'none';
+        if (mainEl) mainEl.style.display = 'flex';
+      }, 500);
+    }, 2000);
+  } else if (mainEl) {
+    mainEl.style.display = 'flex';
+  }
+
   const imageInput           = document.getElementById('imageInput');
   const logoInput            = document.getElementById('logoInput');
   const templateInput        = document.getElementById('templateInput');
