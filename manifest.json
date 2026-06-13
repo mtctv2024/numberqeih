@@ -1,12 +1,13 @@
 {
-  "name": "نظام إدارة الطوابير - أمانة منطقة الرياض",
-  "short_name": "طوابير الرياض",
-  "description": "نظام إدارة الطوابير والطباعة - بلدية محافظة القويعية",
+  "name": "تطبيق وَسْم",
+  "short_name": "وَسْم",
+  "description": "تطبيق إضافة شعار وقالب على الصور - أحد مبادرات جمعية ركاز الشبابية بمحافظة القويعية",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#016948",
-  "theme_color": "#016948",
+  "background_color": "#277180",
+  "theme_color": "#277180",
   "orientation": "portrait",
+  "lang": "ar",
   "icons": [
     {
       "src": "icon-192.png",
