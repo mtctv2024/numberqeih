@@ -1,7 +1,7 @@
 // ========== المتغيرات العامة ==========
 let currentQueue = parseInt(localStorage.getItem('currentQueue')) || 1;
 let ticketHistory = JSON.parse(localStorage.getItem('ticketHistory')) || [];
-let adminPassword = localStorage.getItem('adminPassword') || '1234';
+let adminPassword = localStorage.getItem('adminPassword') || 'Admin@2025';
 let isAdminAuthenticated = false;
 let bluetoothDevice = null;
 let bluetoothCharacteristic = null;
