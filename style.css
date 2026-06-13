@@ -262,5 +262,20 @@ background-size: contain;
 background-position: center;
 background-repeat: no-repeat;
 opacity: 1;
+  animation: hideSplash 2.5s forwards;
 transition: opacity 0.5s ease-out;
+}
+
+
+@keyframes hideSplash {
+  0% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
