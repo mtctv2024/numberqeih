@@ -1,111 +1,196 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>تطبيق وَسْم</title>
-<link rel="stylesheet" href="fontawesome/css/all.min.css">
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#277180">
+  <title>تطبيق وَسْم</title>
+  >
+  /css/all.min.css">
+  >
 </head>
 <body>
-<div id="splash-screen"></div>
 
-<div class="main-container" style="display: none;">
+  <div id="splash-screen"></div>
 
-<div class="preview-panel">
-<div id="previewArea" class="preview-area">
-<canvas id="previewCanvas"></canvas>
-<span id="previewPlaceholder"><i class="fas fa-photo-video"></i><br>منطقة المعاينة</span>
-</div>
-</div>
+  <div class="main-container" style="display: none;">
 
-<div class="control-panel">
-<div class="notebook">
-<div class="tab-header">
-<button class="tab-link active" onclick="openTab(event, 'TabImages')"><i class="fas fa-images"></i> الصور</button>
-<button class="tab-link" onclick="openTab(event, 'TabLogo')"><i class="fas fa-star"></i> الشعار</button>
-<button class="tab-link" onclick="openTab(event, 'TabTemplate')"><i class="fas fa-clone"></i> القالب</button>
-<button class="tab-link" onclick="openTab(event, 'TabProcess')"><i class="fas fa-cogs"></i> الدمج</button>
-</div>
+    <!-- منطقة المعاينة -->
+    <div class="preview-panel">
+      <div id="previewArea" class="preview-area">
+        anvas id="previewCanvas"></canvas>
+        <span id="previewPlaceholder">
+          <i class="fas fa-photo-video"></i><br>منطقة المعاينة
+        </span>
+      </div>
+      <!-- ✅ أزرار التنقل بين الصور -->
+      <div id="previewNav" class="preview-nav" style="display:none;">
+        <button class="btn btn-nav" id="btnPrevImage"><i class="fas fa-chevron-right"></i></button>
+        <span id="previewIndexLabel">1 / 1</span>
+        <button class="btn btn-nav" id="btnNextImage"><i class="fas fa-chevron-left"></i></button>
+      </div>
+    </div>
 
-<div id="TabImages" class="tab-content" style="display: block;">
-<h3><i class="fas fa-images"></i> اختيار الصور</h3>
-<button class="btn" onclick="document.getElementById('imageInput').click()"><i class="fas fa-file-import"></i> اختيار صور متعددة</button>
-<input type="file" id="imageInput" accept="image/jpeg, image/png, image/jpg" multiple hidden>
-<p id="imageCountLabel">0 صورة</p><hr>
-<h4>خيارات حجم الصورة</h4>
-<div class="radio-group">
-<label><input type="radio" name="imageSizeMode" value="fit_to_template" checked onchange="updateLivePreview()"> مطابقة مقاس الصورة للقالب</label>
-<label><input type="radio" name="imageSizeMode" value="keep_original" onchange="updateLivePreview()"> إبقاء مقاس الصورة الأصلي</label>
-</div>
-</div>
-<div id="TabLogo" class="tab-content">
-<h3><i class="fas fa-star"></i> إعدادات الشعار</h3>
-<div class="button-group">
-<button class="btn" onclick="document.getElementById('logoInput').click()"><i class="fas fa-upload"></i> اختيار الشعار</button>
-<button class="btn btn-secondary" id="btn-reset-logo"><i class="fas fa-times"></i></button>
-</div>
-<input type="file" id="logoInput" accept="image/png" hidden>
-<p id="logoStatusLabel">لا يوجد شعار</p>
-<div class="control-group">
-<label for="logoSize">حجم الشعار: <span id="logoSizeValue">15</span>%</label>
-<input type="range" id="logoSize" min="5" max="50" value="15" class="slider">
-</div>
-<div class="control-group">
-<label for="logoOpacity">شفافية الشعار: <span id="logoOpacityValue">100</span>%</label>
-<input type="range" id="logoOpacity" min="10" max="100" value="100" class="slider">
-</div>
-<div class="control-group">
-<label for="logoPosition">موضع الشعار:</label>
-<select id="logoPosition">
-<option value="Bottom-Right">أسفل اليمين</option> <option value="Bottom-Left">أسفل اليسار</option>
-<option value="Top-Right">أعلى اليمين</option> <option value="Top-Left">أعلى اليسار</option>
-<option value="Center">المنتصف</option>
-</select>
-</div>
-</div>
-<div id="TabTemplate" class="tab-content">
-<h3><i class="fas fa-clone"></i> إعدادات القالب</h3>
-<div class="button-group">
-<button class="btn" onclick="document.getElementById('templateInput').click()"><i class="fas fa-upload"></i> اختيار القالب</button>
-<button class="btn btn-secondary" id="btn-reset-template"><i class="fas fa-times"></i></button>
-</div>
-<input type="file" id="templateInput" accept="image/jpeg, image/png, image/jpg" hidden>
-<p id="templateStatusLabel">لا يوجد قالب</p>
-<div class="control-group">
-<label for="templateOpacity">شفافية القالب: <span id="templateOpacityValue">100</span>%</label>
-<input type="range" id="templateOpacity" min="10" max="100" value="100" class="slider">
-</div>
-</div>
-<div id="TabProcess" class="tab-content">
-<h3><i class="fas fa-cogs"></i> بدء الدمج</h3>
-<button class="btn process-btn" id="processButton"><i class="fas fa-play"></i> بدء معالجة الصور</button>
-<progress id="progressBar" value="0" max="100"></progress>
-<p id="progressLabel">0%</p>
-<button class="btn reset-btn" id="resetButton"><i class="fas fa-trash-alt"></i> إعادة ضبط الكل</button>
-</div>
-</div>
-</div>
-</div>
+    <!-- لوحة التحكم -->
+    <div class="control-panel">
+      <div class="notebook">
 
-<div class="info-overlay" style="display: none;">
-<strong>تطبيق وَسْم</strong><br>
-أحد مبادرات جمعية ركاز الشبابية بمحافظة القويعية<br>
-ومتاح استخدامه لكل مسلم<br>
-للتواصل 0540200621
-</div>
+        <!-- رأس التبويبات -->
+        <div class="tab-header">
+          <button class="tab-link active" onclick="openTab(event, 'TabImages')">
+            <i class="fas fa-images"></i><span class="tab-label"> الصور</span>
+          </button>
+          <button class="tab-link" onclick="openTab(event, 'TabLogo')">
+            <i class="fas fa-star"></i><span class="tab-label"> الشعار</span>
+          </button>
+          <button class="tab-link" onclick="openTab(event, 'TabTemplate')">
+            <i class="fas fa-clone"></i><span class="tab-label"> القالب</span>
+          </button>
+          <button class="tab-link" onclick="openTab(event, 'TabProcess')">
+            <i class="fas fa-cogs"></i><span class="tab-label"> الدمج</span>
+          </button>
+        </div>
 
-<div id="post-process-modal" class="modal-overlay">
-<div class="modal-content">
-<h2><i class="fas fa-check-circle"></i> اكتملت المعالجة</h2>
-<div id="progress-container" style="display: none;"><progress id="progressBarModal" value="0" max="100"></progress><p id="progressLabelModal">0%</p></div>
-<p id="post-process-message">تم تحميل الصور بنجاح. ماذا تريد أن تفعل الآن؟</p>
-<div class="modal-buttons">
-<button id="btn-keep-settings" class="btn"><i class="fas fa-save"></i> الاحتفاظ بالإعدادات</button>
-<button id="btn-reset-after-process" class="btn reset-btn"><i class="fas fa-trash-alt"></i> إعادة ضبط التطبيق</button>
-</div>
-</div>
-</div>
-<script src="script.js"></script>
+        <!-- تبويب الصور -->
+        <div id="TabImages" class="tab-content" style="display: block;">
+          <h3><i class="fas fa-images"></i> اختيار الصور</h3>
+          <button class="btn" onclick="document.getElementById('imageInput').click()">
+            <i class="fas fa-file-import"></i> اختيار صور متعددة
+          </button>
+          <input type="file" id="imageInput" accept="image/jpeg, image/png, image/jpg" multiple hidden>
+          <p id="imageCountLabel">0 صورة</p>
+          <hr>
+          <h4>خيارات حجم الصورة</h4>
+          <div class="radio-group">
+            abel>
+              <input type="radio" name="imageSizeMode" value="fit_to_template" checked onchange="updateLivePreview()">
+              مطابقة مقاس الصورة للقالب
+            </label>
+            abel>
+              <input type="radio" name="imageSizeMode" value="keep_original" onchange="updateLivePreview()">
+              إبقاء مقاس الصورة الأصلي
+            </label>
+          </div>
+        </div>
+
+        <!-- تبويب الشعار -->
+        <div id="TabLogo" class="tab-content">
+          <h3><i class="fas fa-star"></i> إعدادات الشعار</h3>
+          <div class="button-group">
+            <button class="btn" onclick="document.getElementById('logoInput').click()">
+              <i class="fas fa-upload"></i> اختيار الشعار
+            </button>
+            <button class="btn btn-secondary" id="btn-reset-logo">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <input type="file" id="logoInput" accept="image/png" hidden>
+          <p id="logoStatusLabel">لا يوجد شعار</p>
+          <div class="control-group">
+            abel for="logoSize">حجم الشعار: <span id="logoSizeValue">15</span>%</label>
+            <input type="range" id="logoSize" min="5" max="50" value="15" class="slider">
+          </div>
+          <div class="control-group">
+            abel for="logoOpacity">شفافية الشعار: <span id="logoOpacityValue">100</span>%</label>
+            <input type="range" id="logoOpacity" min="10" max="100" value="100" class="slider">
+          </div>
+          <div class="control-group">
+            abel for="logoPosition">موضع الشعار:</label>
+            <select id="logoPosition">
+              <option value="Bottom-Right">أسفل اليمين</option>
+              <option value="Bottom-Left">أسفل اليسار</option>
+              <option value="Top-Right">أعلى اليمين</option>
+              <option value="Top-Left">أعلى اليسار</option>
+              <option value="Center">المنتصف</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- تبويب القالب -->
+        <div id="TabTemplate" class="tab-content">
+          <h3><i class="fas fa-clone"></i> إعدادات القالب</h3>
+          <div class="button-group">
+            <button class="btn" onclick="document.getElementById('templateInput').click()">
+              <i class="fas fa-upload"></i> اختيار القالب
+            </button>
+            <button class="btn btn-secondary" id="btn-reset-template">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <input type="file" id="templateInput" accept="image/jpeg, image/png, image/jpg" hidden>
+          <p id="templateStatusLabel">لا يوجد قالب</p>
+          <div class="control-group">
+            abel for="templateOpacity">شفافية القالب: <span id="templateOpacityValue">100</span>%</label>
+            <input type="range" id="templateOpacity" min="10" max="100" value="100" class="slider">
+          </div>
+        </div>
+
+        <!-- تبويب الدمج -->
+        <div id="TabProcess" class="tab-content">
+          <h3><i class="fas fa-cogs"></i> بدء الدمج</h3>
+
+          <!-- ✅ جودة التصدير -->
+          <div class="control-group">
+            abel for="exportQuality">جودة التصدير: <span id="exportQualityValue">95</span>%</label>
+            <input type="range" id="exportQuality" min="50" max="100" value="95" class="slider"
+              oninput="document.getElementById('exportQualityValue').textContent = this.value">
+          </div>
+
+          <button class="btn process-btn" id="processButton">
+            <i class="fas fa-play"></i> بدء معالجة الصور
+          </button>
+          <progress id="progressBar" value="0" max="100"></progress>
+          <p id="progressLabel">0%</p>
+          <button class="btn reset-btn" id="resetButton">
+            <i class="fas fa-trash-alt"></i> إعادة ضبط الكل
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- معلومات التطبيق -->
+  <div class="info-overlay" style="display: none;">
+    <strong>تطبيق وَسْم</strong><br>
+    أحد مبادرات جمعية ركاز الشبابية بمحافظة القويعية<br><br>
+    ومتاح استخدامه لكل مسلم<br><br>
+    للتواصل 0540200621
+  </div>
+
+  <!-- ✅ Modal ما بعد المعالجة -->
+  <div id="post-process-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2><i class="fas fa-check-circle"></i> اكتملت المعالجة</h2>
+      <div id="progress-container" style="display: none;">
+        <progress id="progressBarModal" value="0" max="100"></progress>
+        <p id="progressLabelModal">0%</p>
+      </div>
+      <p id="post-process-message">تم تحميل الصور بنجاح. ماذا تريد أن تفعل الآن؟</p>
+      <div class="modal-buttons">
+        <button id="btn-keep-settings" class="btn">
+          <i class="fas fa-save"></i> الاحتفاظ بالإعدادات
+        </button>
+        <button id="btn-reset-after-process" class="btn reset-btn">
+          <i class="fas fa-trash-alt"></i> إعادة ضبط التطبيق
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // تسجيل Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('SW registered:', reg.scope))
+          .catch(err => console.log('SW error:', err));
+      });
+    }
+  </script>
+  <script src="script.js"></script>
 </body>
 </html>
