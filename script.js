@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // --- شاشة البداية ---
+  const splashScreen = document.getElementById('splash-screen');
+  const mainContainer = document.querySelector('.main-container');
+  if (splashScreen && mainContainer) {
+    setTimeout(() => {
+      splashScreen.style.opacity = '0';
+      setTimeout(() => {
+        splashScreen.style.display = 'none';
+        mainContainer.style.display = 'flex';
+      }, 500);
+    }, 1500);
+  } else if (mainContainer) {
+    mainContainer.style.display = 'flex';
+  }
+
 
   const imageInput           = document.getElementById('imageInput');
   const logoInput            = document.getElementById('logoInput');
