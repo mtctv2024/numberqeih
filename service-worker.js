@@ -1,68 +1,27 @@
-const CACHE_NAME = 'queue-system-v2';
-const urlsToCache = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/nav-bg.jpg',
-  '/vision2030.png',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('تم فتح الكاش');
-        return cache.addAll(urlsToCache);
-      })
-  );
+// This service worker unregisters itself and clears all caches
+self.addEventListener('install', function(event) {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', function(event) {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then(function(cacheNames) {
       return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('حذف كاش قديم:', cacheName);
-            return caches.delete(cacheName);
-          }
+        cacheNames.map(function(cacheName) {
+          return caches.delete(cacheName);
         })
       );
+    }).then(function() {
+      return self.clients.matchAll();
+    }).then(function(clients) {
+      clients.forEach(function(client) {
+        client.navigate(client.url);
+      });
     })
   );
-    self.clients.claim();
+  return self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-
-        return fetch(event.request).then(
-          response => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            const responseToCache = response.clone();
-
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          }
-        );
-      })
-  );
+self.addEventListener('fetch', function(event) {
+  event.respondWith(fetch(event.request));
 });
