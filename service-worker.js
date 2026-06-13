@@ -1,14 +1,17 @@
-const CACHE_NAME = 'queue-system-v1';
+const CACHE_NAME = 'wasm-app-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/nav-bg.jpg',
-  '/vision2030.png',
+  '/style.css',
+  '/script.js',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon.ico',
+  '/icon.png',
+  '/header logo.png',
+  '/nav-bg.jpg',
+  '/splash.png',
   'https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap'
 ];
 
@@ -41,29 +44,16 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        if (response) {
+        if (response) return response;
+        return fetch(event.request).then(response => {
+          if (!response || response.status !== 200 || response.type !== 'basic') return response;
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
           return response;
-        }
-        
-        return fetch(event.request).then(
-          response => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            
-            const responseToCache = response.clone();
-            
-            caches.open(CACHE_NAME)
-              .then(cache => {
-                cache.put(event.request, responseToCache);
-              });
-            
-            return response;
-          }
-        );
+        });
       })
-      .catch(() => {
-        return caches.match('/index.html');
-      })
+      .catch(() => caches.match('/index.html'))
   );
 });
