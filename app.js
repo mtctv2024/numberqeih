@@ -817,7 +817,7 @@ async function testWiFiPrinter() {
     showAlert('جاري اختبار الاتصال...', 'info');
     
     try {
-        const response = await fetch('http://localhost:3000/test-connection', {
+        const response = await fetch('http://' + (localStorage.getItem('printServerURL') || 'localhost:3000') + '/test-connection', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip, port: parseInt(port) })
@@ -861,14 +861,14 @@ async function printViaWiFi(ticket) {
         const commands = buildESCPOSCommands(ticket);
         const commandsArray = Array.from(commands);
         
-        const response = await fetch('http://localhost:3000/print', {
+        const response = await fetch('${serverUrl}/print', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip, port, data: commandsArray })
         });
         
         const
-        const response = await fetch('http://localhost:3000/print', {
+        const response = await fetch('${serverUrl}/print', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip, port, data: commandsArray })
