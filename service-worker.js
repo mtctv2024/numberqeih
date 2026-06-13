@@ -1,8 +1,10 @@
-const CACHE_NAME = 'wasm-app-v1';
+const CACHE_NAME = 'wasm-app-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/style.css',
+    '/styles.css',
+  '/css/all.min.css',
   '/script.js',
   '/manifest.json',
   '/icon-192.png',
