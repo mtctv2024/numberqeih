@@ -113,6 +113,10 @@ padding: 20px;
 overflow-y: auto;
 flex-grow: 1;
 }
+
+#TabImages {
+  display: block;
+}
 .tab-content h3, .tab-content h4 { color: var(--text-color); }
 .tab-content h3 { margin-top: 0; }
 .tab-content h3 i { color: var(--accent-color); margin-left: 10px; }
