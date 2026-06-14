@@ -285,6 +285,41 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // --- إعادة تعيين القالب ---
+
+  // --- Event listeners for file inputs ---
+  imageInput.addEventListener('change', function(e) {
+    imageFiles = Array.from(e.target.files);
+    imageCountLabel.textContent = imageFiles.length + ' صورة';
+    if (imageFiles.length > 0) {
+      updateLivePreview();
+    }
+  });
+
+  logoInput.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        preloadedLogo = await loadImageFromFile(file);
+        logoStatusLabel.textContent = 'تم تحميل: ' + file.name;
+        updateLivePreview();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  });
+
+  templateInput.addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        preloadedTemplate = await loadImageFromFile(file);
+        templateStatusLabel.textContent = 'تم تحميل: ' + file.name;
+        updateLivePreview();
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  });
   function resetTemplate() {
     preloadedTemplate = null;
     templateInput.value = '';
